@@ -1,16 +1,16 @@
-profile: "cloud"  # Switch between "cloud" and "local"
+profile: "cloud" # Switch between "cloud" and "local"
 
 profiles:
   cloud:
     embedding:
       provider: "gemini"
-      model: "text-embedding-004"
+      model: "gemini-embedding-2"
     llm:
       provider: "gemini"
-      model: "gemini-1.5-flash"
+      model: "gemini-3.8-flash"
       temperature: 0.1
     collection: "f1-regs-gemini"
-  
+
   local:
     embedding:
       provider: "local"
