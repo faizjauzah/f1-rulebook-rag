@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "question": "What is DRS and when can it be used?",
+    "category": "easy",
+    "section": "B"
+  },
+  {
+    "id": 2,
+    "question": "What is the maximum fuel flow rate allowed?",
+    "category": "easy",
+    "section": "C"
+  },
+  {
+    "id": 3,
+    "question": "What are the financial regulations for F1 teams?",
+    "category": "easy",
+    "section": "D"
+  },
+  {
+    "id": 4,
+    "question": "What happens if a driver causes a collision during the race?",
+    "category": "medium",
+    "section": "B"
+  },
+  {
+    "id": 5,
+    "question": "What are the technical specifications for the power unit?",
+    "category": "medium",
+    "section": "C"
+  },
+  {
+    "id": 6,
+    "question": "How are cost cap penalties determined and applied?",
+    "category": "medium",
+    "section": "D"
+  },
+  {
+    "id": 7,
+    "question": "What operational procedures must teams follow during a race weekend?",
+    "category": "medium",
+    "section": "F"
+  },
+  {
+    "id": 8,
+    "question": "If it starts raining during qualifying, what procedures are followed and how does this affect tire choice in the subsequent sessions?",
+    "category": "hard",
+    "section": "B"
+  },
+  {
+    "id": 9,
+    "question": "What are the interactions between the cost cap regulations and power unit manufacturer financial regulations?",
+    "category": "hard",
+    "section": "D,E"
+  },
+  {
+    "id": 10,
+    "question": "How do the technical regulations balance performance with safety requirements for the chassis design?",
+    "category": "hard",
+    "section": "C"
+  }
+]
