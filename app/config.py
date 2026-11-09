@@ -23,6 +23,7 @@ class Config:
         # Embedding config
         self.embedding_provider = profile_config["embedding"]["provider"]
         self.embedding_model = profile_config["embedding"]["model"]
+        self.embedding_base_url = profile_config["embedding"].get("base_url")
         
         # LLM config
         self.llm_provider = profile_config["llm"]["provider"]

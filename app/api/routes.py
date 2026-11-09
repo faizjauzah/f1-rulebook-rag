@@ -75,7 +75,7 @@ async def query(request: QueryRequest):
         answer = generate_answer(request.question, filtered_chunks)
         
         # Format sources
-        sources = format_sources(filtered_chunks)
+        sources = format_sources(filtered_chunks, answer, request.question)
         
         # Calculate response time
         response_time_ms = int((time.time() - start_time) * 1000)
