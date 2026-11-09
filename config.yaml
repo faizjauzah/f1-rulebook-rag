@@ -19,7 +19,7 @@ profiles:
     llm:
       provider: "local"
       base_url: "http://host.docker.internal:1234/v1"
-      model: "nvidia/nemotron-3-nano-4b"
+      model: "google/gemma-4-e4b"
       temperature: 0.1
     collection: "f1-regs-local"
 
