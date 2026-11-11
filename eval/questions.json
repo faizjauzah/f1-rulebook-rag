@@ -1,62 +1,182 @@
 [
   {
     "id": 1,
-    "question": "What is DRS and when can it be used?",
+    "question": "What are the two FIA Formula One World Championship titles awarded each season?",
+    "category": "easy",
+    "section": "A"
+  },
+  {
+    "id": 2,
+    "question": "How many points are awarded to the winner of a Race when at least 75% of the scheduled Race distance has been completed?",
+    "category": "easy",
+    "section": "A"
+  },
+  {
+    "id": 3,
+    "question": "When does a Competition officially commence according to the Sporting Regulations?",
     "category": "easy",
     "section": "B"
   },
   {
-    "id": 2,
-    "question": "What is the maximum fuel flow rate allowed?",
-    "category": "easy",
-    "section": "C"
-  },
-  {
-    "id": 3,
-    "question": "What are the financial regulations for F1 teams?",
-    "category": "easy",
-    "section": "D"
-  },
-  {
     "id": 4,
-    "question": "What happens if a driver causes a collision during the race?",
-    "category": "medium",
+    "question": "What are the two permitted forms of Driver Adjustable Bodywork on a 2026 F1 car?",
+    "category": "easy",
     "section": "B"
   },
   {
     "id": 5,
-    "question": "What are the technical specifications for the power unit?",
-    "category": "medium",
+    "question": "What is the minimum combined reference mass of the driver and Driver Ballast during a Competition?",
+    "category": "easy",
     "section": "C"
   },
   {
     "id": 6,
-    "question": "How are cost cap penalties determined and applied?",
+    "question": "What is the maximum cumulative amount of energy that may be stored in the Power Unit, excluding the ERS?",
+    "category": "easy",
+    "section": "C"
+  },
+  {
+    "id": 7,
+    "question": "What is the main purpose of the Cost Cap under the F1 Team Financial Regulations?",
+    "category": "easy",
+    "section": "D"
+  },
+  {
+    "id": 8,
+    "question": "What is the name of the regulatory cost limit that applies specifically to Power Unit Manufacturers?",
+    "category": "easy",
+    "section": "E"
+  },
+  {
+    "id": 9,
+    "question": "How many consecutive calendar days must an F1 Team observe for its July/August factory shutdown period under the standard rule?",
+    "category": "easy",
+    "section": "F"
+  },
+  {
+    "id": 10,
+    "question": "What minimum level of FIA Environmental Accreditation must each Competitor hold?",
+    "category": "easy",
+    "section": "F"
+  },
+  {
+    "id": 11,
+    "question": "How does the Race points system change depending on the percentage of scheduled Race distance completed by the leader?",
+    "category": "medium",
+    "section": "A"
+  },
+  {
+    "id": 12,
+    "question": "What responsibilities do F1 Teams and Power Unit Manufacturers have when they become aware of a possible breach of the FIA F1 Regulations?",
+    "category": "medium",
+    "section": "A"
+  },
+  {
+    "id": 13,
+    "question": "Under what conditions may a driver fully or partially activate Driver Adjustable Bodywork, and what restriction applies in Low Grip Conditions?",
+    "category": "medium",
+    "section": "B"
+  },
+  {
+    "id": 14,
+    "question": "When may intermediate and wet-weather tyres be used during a Free Practice session, and what must happen before they can be used?",
+    "category": "medium",
+    "section": "B"
+  },
+  {
+    "id": 15,
+    "question": "What happens if a driver uses tyres of different specifications or tyres that were not allocated to them during a Total Time Classified Session?",
+    "category": "medium",
+    "section": "B"
+  },
+  {
+    "id": 16,
+    "question": "What requirements apply to ballast used to meet the driver's minimum reference mass?",
+    "category": "medium",
+    "section": "C"
+  },
+  {
+    "id": 17,
+    "question": "How does the F1 Team Financial Regulations classify a Minor Overspend Breach compared with a Material Overspend Breach, and what are the required consequences of each?",
     "category": "medium",
     "section": "D"
   },
   {
-    "id": 7,
-    "question": "What operational procedures must teams follow during a race weekend?",
+    "id": 18,
+    "question": "What reporting and cooperation obligations must a Power Unit Manufacturer fulfil to demonstrate compliance with its Power Unit Cost Cap?",
+    "category": "medium",
+    "section": "E"
+  },
+  {
+    "id": 19,
+    "question": "Which development and production activities are generally prohibited for an F1 Team during its factory shutdown period?",
     "category": "medium",
     "section": "F"
   },
   {
-    "id": 8,
-    "question": "If it starts raining during qualifying, what procedures are followed and how does this affect tire choice in the subsequent sessions?",
+    "id": 20,
+    "question": "What types of aerodynamic development activity are controlled by the Aerodynamic Testing Restrictions (ATR), and what are the two principal testing methods covered?",
+    "category": "medium",
+    "section": "F"
+  },
+  {
+    "id": 21,
+    "question": "A Race is stopped after the leader has completed 40% of the scheduled distance. Explain which Race points column applies and identify the points awarded to the top three classified drivers.",
+    "category": "hard",
+    "section": "A"
+  },
+  {
+    "id": 22,
+    "question": "A driver activates both front-wing and rear-wing adjustment in a designated Low Grip Activation Zone. Explain whether full or partial Driver Adjustable Bodywork activation is permitted, how the two wing positions define that state, and what electronic notification the driver must receive before activation.",
+    "category": "hard",
+    "section": "B,C"
+  },
+  {
+    "id": 23,
+    "question": "During a Race, the Safety Car is deployed while a driver is eligible to use Overtake. Explain how the Overtake system is disabled and the condition under which it becomes available again after the Safety Car returns to the Pit Lane.",
     "category": "hard",
     "section": "B"
   },
   {
-    "id": 9,
-    "question": "What are the interactions between the cost cap regulations and power unit manufacturer financial regulations?",
+    "id": 24,
+    "question": "A Competition has a declared Rain Hazard and the car is under parc fermé conditions. Explain how the Rain Hazard affects the work that may be carried out on the car, and distinguish this from the tyre-use rule that applies when a Free Practice session is declared wet.",
+    "category": "hard",
+    "section": "B"
+  },
+  {
+    "id": 25,
+    "question": "A team replaces a component during a Race and also carries ballast intended to satisfy the driver's minimum mass requirement. Explain the restrictions on adding substances or replacing parts during the Race, and the location, security and mass requirements for Driver Ballast.",
+    "category": "hard",
+    "section": "C"
+  },
+  {
+    "id": 26,
+    "question": "An F1 Team's Relevant Costs are determined to exceed its Cost Cap by 2.3%. Classify the breach and explain the sporting and financial sanctions that the Cost Cap Adjudication Panel must impose or may additionally impose.",
+    "category": "hard",
+    "section": "D"
+  },
+  {
+    "id": 27,
+    "question": "An organisation both operates as an F1 Team and is part of a Power Unit Manufacturer's wider legal group. Explain why compliance with the F1 Team Cost Cap and the Power Unit Cost Cap must be assessed separately, and identify the distinct entities each set of regulations covers.",
     "category": "hard",
     "section": "D,E"
   },
   {
-    "id": 10,
-    "question": "How do the technical regulations balance performance with safety requirements for the chassis design?",
+    "id": 28,
+    "question": "A Power Unit Manufacturer wants to continue operating a test bench during its factory shutdown for maintenance, while also conducting a test related to Formula One development. Explain which activity may qualify for a shutdown exception and which restriction still applies.",
     "category": "hard",
-    "section": "C"
+    "section": "F"
+  },
+  {
+    "id": 29,
+    "question": "A team proposes using its wind tunnel and CFD resources during its factory shutdown, claiming the work is for maintenance and software upgrades. Explain the relevant shutdown exceptions and how the separate Aerodynamic Testing Restrictions may still limit the proposed work.",
+    "category": "hard",
+    "section": "F"
+  },
+  {
+    "id": 30,
+    "question": "A Power Unit Manufacturer commits a Material Overspend Breach and receives a financial penalty. Explain the possible categories of sporting or regulatory sanctions, the deadline for paying the fine, and the consequence of failing to pay by the due date.",
+    "category": "hard",
+    "section": "E"
   }
 ]
