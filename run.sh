@@ -15,7 +15,7 @@ case "$1" in
   
   ingest)
     echo "📥 Ingesting PDFs..."
-    echo "This may take 5-20 minutes depending on your profile..."
+    echo "This takes ~5-10 minutes with a local embedding model..."
     curl -X POST http://localhost:8000/ingest
     echo ""
     ;;
@@ -71,7 +71,7 @@ case "$1" in
     echo "  clean      - Remove all data and containers"
     echo ""
     echo "Quick start:"
-    echo "  1. Add your GOOGLE_API_KEY to .env"
+    echo "  1. Start LM Studio and load the embedding + chat models from config.yaml"
     echo "  2. ./run.sh start"
     echo "  3. Wait for services to be healthy"
     echo "  4. ./run.sh ingest"

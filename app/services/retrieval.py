@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import chromadb
 
 from app.config import config
-from app.services.ingestion import get_embeddings
+from app.services.embeddings import get_embeddings
 
 logger = logging.getLogger(__name__)
 

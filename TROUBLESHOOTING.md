@@ -1,157 +1,130 @@
 # Troubleshooting Guide
 
-## Common Issues and Solutions
+Everything runs locally, so most failures are one of three things: Docker, ChromaDB, or the model server on the host.
 
-### 1. Docker Services Won't Start
+### 1. Docker services won't start
 
-**Issue**: `docker-compose up` fails or services crash
-
-**Solutions**:
-- Check if ports 8000 and 8001 are already in use:
+- Check ports 8000 (API) and 8001 (ChromaDB) are free:
   ```bash
   lsof -i :8000
   lsof -i :8001
   ```
-- Kill conflicting processes or change ports in `docker-compose.yml`
-- Check Docker has enough resources (4GB RAM minimum)
+- Docker needs ~4GB RAM for the containers (the models themselves run outside Docker).
 - View logs: `docker-compose logs`
 
-### 2. ChromaDB Connection Errors
+### 2. API refuses to start: `...base_url must point at a local server`
 
-**Issue**: API can't connect to ChromaDB
+`app/config.py` rejects any `base_url` that isn't loopback, `host.docker.internal`, or a private network address. This is deliberate: the OpenAI SDK would otherwise silently fall back to `api.openai.com`.
 
-**Solutions**:
-- Wait for ChromaDB healthcheck to pass (check `docker-compose logs chroma`)
-- Verify ChromaDB is running: `curl http://localhost:8001/api/v1/heartbeat`
-- Restart services: `docker-compose restart`
+Use one of:
+- `http://host.docker.internal:1234/v1` (server on this machine)
+- `http://192.168.x.x:1234/v1` (server on your LAN)
 
-### 3. Ingestion Fails
+### 3. Can't reach the model server
 
-**Issue**: `/ingest` returns 500 error or times out
+- **LM Studio server not started**: Developer tab → Start Server, port 1234.
+- **Wrong address from Docker**: use `host.docker.internal`, not `localhost` — inside the container, `localhost` is the container.
+- **Linux**: `docker-compose.yml` maps `host.docker.internal` via `extra_hosts`; if you removed that, the name won't resolve.
+- **Server bound to 127.0.0.1 only**: enable "Serve on Local Network" (or bind `0.0.0.0`) so the container can reach it.
+- Quick check from the host: `curl http://localhost:1234/v1/models`
 
-**Solutions**:
-- **Check API key**: Verify `GOOGLE_API_KEY` in `.env` is correct
-- **Rate limits**: Gemini free tier is 15 RPM. Wait and retry if hit
-- **Timeout**: Ingestion takes 5-20 minutes. Don't close the terminal
-- **Check logs**: `docker-compose logs api` for detailed errors
-- **Verify PDFs**: Ensure all 6 PDFs are in `/PDFs/` directory
+### 4. `model_not_found` / 404 from the model server
 
-### 4. "Collection not found" Error
+The names in `config.yaml` must match what the server actually has:
 
-**Issue**: Queries fail with "Collection not found"
-
-**Solution**: Run ingestion first:
 ```bash
-curl -X POST http://localhost:8000/ingest
+curl http://localhost:1234/v1/models
 ```
 
-### 5. Local Mode Issues
+Load the embedding model **and** the chat model in LM Studio. Either enable just-in-time loading in the server settings or load both before starting a query/ingest.
 
-**Issue**: Local profile doesn't work
+### 5. ChromaDB connection errors
 
-**Solutions**:
-- **LM Studio not running**: Start LM Studio server on port 1234
-- **Model not loaded**: Load a model in LM Studio before querying
-- **Wrong base_url**: From Docker, use `http://host.docker.internal:1234/v1`
-- **Embeddings slow**: First run downloads bge-large model (~1.3GB)
+- Wait for the healthcheck to pass: `docker-compose logs chroma`
+- Verify from the host: `curl http://localhost:8001/api/v1/heartbeat`
+- Restart: `docker-compose restart`
 
-### 6. No Results / Low Quality Answers
+### 6. Ingestion fails
 
-**Issue**: Queries return "no relevant regulations found" or poor answers
+- **Model server unreachable or embedding model missing** — see issues 3 and 4; the embed step fails first.
+- **Timeout**: a cold model can take a while on the first batch; the client allows 120s per request. Ingestion overall takes ~5–10 minutes.
+- **Check logs**: `docker-compose logs api`
+- **PDFs**: ensure all six files are in `PDFs/` and match the `Section X [Name] ... Iss NN ... date` filename pattern.
 
-**Solutions**:
-- **Lower threshold**: In `config.yaml`, reduce `similarity_threshold` from 0.6 to 0.4
-- **Increase top_k**: Change `top_k` from 5 to 10 in `config.yaml`
-- **Check question**: Ensure it's about F1 regulations, not general racing
-- **Try different phrasing**: Rephrase using regulation terminology
+If embedding fails, the existing collection is left untouched — embeddings are generated before the collection is recreated.
 
-### 7. Slow Response Times
+### 7. "Collection not found"
 
-**Issue**: Queries take >10 seconds
+Ingestion hasn't run (or was run against a different collection name):
 
-**Solutions**:
-- **Gemini**: Check internet connection, may be regional latency
-- **Local mode**: Ensure LM Studio model fits in RAM (8GB+ recommended)
-- **Reduce top_k**: Fewer chunks = faster generation
-- **Check resources**: Docker container CPU/RAM limits
+```bash
+./run.sh ingest
+```
 
-### 8. Web UI Not Loading
+Changing the embedding model also invalidates the collection: re-ingest.
 
-**Issue**: http://localhost:8000 doesn't load
+### 8. No results / low-quality answers
 
-**Solutions**:
-- Verify API is running: `curl http://localhost:8000/health`
-- Check browser console for errors
-- Try different browser or incognito mode
-- Verify port forwarding if using remote Docker
+- **Lower the threshold**: `similarity_threshold` from `0.6` to `0.4` in `config.yaml`.
+- **Raise `top_k`** from `5` to `10`.
+- **Use regulation wording**: "minimum mass", "power unit", "parc fermé", not "car weight".
+- **Small models paraphrase**: a larger chat model usually improves citation accuracy.
 
-### 9. Evaluation Script Fails
+### 9. Slow responses
 
-**Issue**: `python eval/run_eval.py` errors
+- The first request after loading a model is slow (weights into RAM); later ones are faster.
+- Check the model fits in RAM/VRAM; a swapping 27B model is slower than a resident 8B model.
+- Reduce `top_k` to send fewer chunks.
+- Check container CPU/RAM in Docker Desktop.
 
-**Solutions**:
-- **Outside Docker**: Install dependencies `pip install requests`
-- **Inside Docker**: `docker-compose exec api python eval/run_eval.py`
-- **API not ready**: Check services are running and ingestion completed
-- **Timeout**: Increase timeout in `run_eval.py` line 31
+### 10. Web UI won't load
 
-### 10. PDF Parsing Issues
+- `curl http://localhost:8000/health`
+- Browser console errors: the UI loads `marked` and `DOMPurify` from `/static/vendor/` (vendored, no CDN). If those 404, the UI falls back to plain text.
+- Try incognito or another browser.
 
-**Issue**: Chunks don't match article structure
+### 11. Eval fails
 
-**Solutions**:
-- PDFs must follow standard FIA format (Section X [Name])
-- Check logs for "Extracted X chunks" per PDF
-- Some articles may span multiple chunks (intentional for long articles)
-- Verify PDF filenames match expected pattern
+- Run inside Docker: `./run.sh eval`
+- Ingestion must be complete, and the chat model loaded.
+- Per-question deadline is `EVAL_TIMEOUT` (default 180s). Local answers take 60–130s; if you see read timeouts, raise it. A timed-out request keeps running server-side and the next one queues behind it, so timeouts cascade.
+- Check `eval/results.json` inside the container for the raw answers.
 
-## Getting Help
+### 12. PDF parsing issues
 
-1. **Check logs**: `docker-compose logs api` or `docker-compose logs chroma`
-2. **Health check**: `curl http://localhost:8000/health`
-3. **Test ChromaDB**: `curl http://localhost:8001/api/v1/heartbeat`
-4. **Verify config**: Check `config.yaml` profile matches your setup
-5. **Check .env**: Ensure `GOOGLE_API_KEY` is set and valid
+- PDFs must follow the FIA layout (Section header, `ARTICLE C4: ...`, `C4.1 ...` clause headings).
+- Check per-file logs: "Extracted N chunks from ...".
+- Long clauses are split into numbered parts (`part` metadata) on purpose.
+- Filenames must match `Section ([A-F]) [Name] ... Iss NN ... YYYY-MM-DD`.
 
-## Debug Mode
+## Getting help
 
-Enable verbose logging:
+1. `docker-compose logs api` / `docker-compose logs chroma`
+2. `curl http://localhost:8000/health`
+3. `curl http://localhost:1234/v1/models` (host)
+4. `config.yaml` model names vs what the server lists
 
-1. Edit `app/main.py`, change:
-   ```python
-   logging.basicConfig(level=logging.DEBUG)
-   ```
+## Debug mode
 
-2. Rebuild:
-   ```bash
-   docker-compose up --build
-   ```
+In `app/main.py`, change `logging.basicConfig(level=logging.INFO)` to `DEBUG`, then `docker-compose up --build` and `docker-compose logs -f api`.
 
-3. View detailed logs:
-   ```bash
-   docker-compose logs -f api
-   ```
-
-## Reset Everything
-
-If all else fails, clean slate:
+## Reset everything
 
 ```bash
 ./run.sh clean
-# Or manually:
-docker-compose down -v
-rm -rf data/
-docker-compose up --build
-curl -X POST http://localhost:8000/ingest
+./run.sh start
+./run.sh ingest
 ```
 
-## Performance Benchmarks
+`clean` removes `data/`, so the collection is rebuilt from scratch.
 
-Expected performance on decent hardware:
+## Expected performance
 
-- **Ingestion**: 5-20 min (Gemini slower due to rate limits)
-- **Query response**: 2-5 seconds
-- **Eval suite**: 5-10 minutes (10 questions)
-- **Startup time**: 30-60 seconds (ChromaDB healthcheck)
+On a machine with enough RAM for the model:
 
-Significantly outside these ranges indicates an issue.
+- **Ingestion**: ~5–10 minutes (six PDFs)
+- **Query**: a few seconds to ~2 minutes depending on model size and `top_k`
+- **Eval suite**: 10 questions, ~15 minutes at 60–130s each
+- **Startup**: 30–60s (ChromaDB healthcheck)
+
+Much slower than this usually means the model is swapping or the server is still loading weights.

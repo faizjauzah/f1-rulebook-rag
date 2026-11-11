@@ -35,10 +35,9 @@ async def root():
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info(f"Starting F1 Rulebook RAG API")
-    logger.info(f"Active profile: {config.active_profile}")
-    logger.info(f"Embedding provider: {config.embedding_provider}")
-    logger.info(f"LLM provider: {config.llm_provider}")
+    logger.info(f"Starting F1 Rulebook RAG API (local inference only)")
+    logger.info(f"Embedding model: {config.embedding_model} @ {config.embedding_base_url}")
+    logger.info(f"LLM: {config.llm_model} @ {config.llm_base_url}")
     logger.info(f"Collection: {config.collection_name}")
 
 

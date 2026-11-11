@@ -27,7 +27,9 @@ async def health_check():
     
     return HealthResponse(
         status="healthy" if chroma_connected else "degraded",
-        profile=config.active_profile,
+        embedding_model=config.embedding_model,
+        llm_model=config.llm_model,
+        collection=config.collection_name,
         chroma_connected=chroma_connected
     )
 

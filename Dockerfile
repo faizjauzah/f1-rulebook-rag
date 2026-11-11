@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY config.yaml .
 COPY PDFs/ ./PDFs/
+COPY eval/ ./eval/
 
 # Expose port
 EXPOSE 8000

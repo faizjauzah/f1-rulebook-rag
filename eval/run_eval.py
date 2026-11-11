@@ -1,10 +1,15 @@
 import json
+import os
 import sys
 import time
 from typing import List, Dict, Any
 import requests
 
 API_URL = "http://localhost:8000"
+
+# A local model can take a while to answer a multi-source question, so the client
+# deadline is generous (and overridable) instead of tuned for a hosted API.
+EVAL_TIMEOUT_S = float(os.getenv("EVAL_TIMEOUT", "180"))
 
 
 def load_questions(filepath: str = "eval/questions.json") -> List[Dict[str, Any]]:
@@ -28,7 +33,7 @@ def run_eval(questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             response = requests.post(
                 f"{API_URL}/query",
                 json={"question": q['question']},
-                timeout=60
+                timeout=EVAL_TIMEOUT_S
             )
             elapsed = time.time() - start
             

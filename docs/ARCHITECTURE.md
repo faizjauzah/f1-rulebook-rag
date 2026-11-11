@@ -1,4 +1,6 @@
-# F1 Rulebook RAG - Architecture Diagram
+# F1 Rulebook RAG — Architecture
+
+Everything below runs on one machine. The only network hop is container → host, to the local model server.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -6,7 +8,7 @@
 │                                                                       │
 │  ┌─────────────────┐              ┌──────────────────────┐          │
 │  │   Web Browser   │              │   API Clients        │          │
-│  │   (localhost:   │              │   (curl, Postman)    │          │
+│  │  (localhost:    │              │   (curl, Postman)    │          │
 │  │    8000)        │              │                      │          │
 │  └────────┬────────┘              └──────────┬───────────┘          │
 │           │                                   │                      │
@@ -20,12 +22,11 @@
 │                        (Docker Container)                            │
 │                                                                       │
 │  ┌──────────────────────────────────────────────────────────────┐   │
-│  │                     API Endpoints                             │   │
-│  │  • GET  /              → Web UI                              │   │
-│  │  • GET  /health        → Service status                      │   │
-│  │  • POST /ingest        → PDF ingestion                       │   │
-│  │  • POST /query         → RAG query                           │   │
-│  │  • GET  /docs          → OpenAPI docs                        │   │
+│  │  GET  /            → Web UI (static, vendored assets)        │   │
+│  │  GET  /health      → models + Chroma status                  │   │
+│  │  POST /ingest      → PDF ingestion                           │   │
+│  │  POST /query       → RAG query                               │   │
+│  │  GET  /docs        → OpenAPI docs                            │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 │                            │                                          │
 │  ┌─────────────────────────┴──────────────────────────────────┐     │
@@ -34,106 +35,107 @@
 │  │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────┐ │     │
 │  │  │  Ingestion   │  │  Retrieval   │  │   Generation    │ │     │
 │  │  │              │  │              │  │                 │ │     │
-│  │  │ • PDF parse  │  │ • Vector     │  │ • LLM prompt   │ │     │
-│  │  │ • Chunk by   │  │   search     │  │ • Answer gen   │ │     │
-│  │  │   article    │  │ • Similarity │  │ • Source fmt   │ │     │
-│  │  │ • Embed      │  │   threshold  │  │                 │ │     │
-│  │  │ • Store      │  │              │  │                 │ │     │
+│  │  │ • PDF parse  │  │ • direct     │  │ • prompt        │ │     │
+│  │  │ • clause     │  │   clause     │  │ • answer        │ │     │
+│  │  │   chunking   │  │   lookup     │  │ • source fmt    │ │     │
+│  │  │ • embeddings │  │ • vector     │  │ • highlight     │ │     │
+│  │  │ • Chroma     │  │   search     │  │                 │ │     │
+│  │  │   writes     │  │ • grouping   │  │                 │ │     │
 │  │  └──────┬───────┘  └──────┬───────┘  └────────┬────────┘ │     │
-│  └─────────┼─────────────────┼───────────────────┼──────────┘     │
-│            │                 │                   │                  │
-└────────────┼─────────────────┼───────────────────┼──────────────────┘
-             │                 │                   │
-             │                 │                   │
-             ▼                 ▼                   │
-┌─────────────────────────────────────────────┐   │
-│         CHROMADB CONTAINER                  │   │
-│        (localhost:8001)                     │   │
-│                                             │   │
-│  ┌────────────────────────────────────┐    │   │
-│  │  Collections:                      │    │   │
-│  │  • f1-regs-gemini  (768-dim)      │    │   │
-│  │  • f1-regs-local   (1024-dim)     │    │   │
-│  └────────────────────────────────────┘    │   │
-│                                             │   │
-│  ┌────────────────────────────────────┐    │   │
-│  │  Persistent Storage:               │    │   │
-│  │  ./data/chroma/                    │    │   │
-│  │  (bind mount)                      │    │   │
-│  └────────────────────────────────────┘    │   │
-└─────────────────────────────────────────────┘   │
-                                                  │
-                        ┌─────────────────────────┴────────────────────┐
-                        │                                              │
-                        ▼                                              ▼
-┌──────────────────────────────────────┐    ┌──────────────────────────────────┐
-│    CLOUD PROVIDERS (Profile: cloud)  │    │  LOCAL MODELS (Profile: local)   │
-│                                      │    │                                  │
-│  ┌─────────────────────────────┐    │    │  ┌────────────────────────────┐ │
-│  │  Google Gemini API          │    │    │  │  LM Studio                 │ │
-│  │  • text-embedding-004       │    │    │  │  (localhost:1234)          │ │
-│  │  • gemini-1.5-flash         │    │    │  │  • Local LLM               │ │
-│  │  Free tier: 15 RPM          │    │    │  │  • OpenAI-compatible API   │ │
-│  └─────────────────────────────┘    │    │  └────────────────────────────┘ │
-│                                      │    │                                  │
-└──────────────────────────────────────┘    │  ┌────────────────────────────┐ │
-                                            │  │  sentence-transformers     │ │
-                                            │  │  • bge-large-en-v1.5       │ │
-                                            │  │  • Local embeddings        │ │
-                                            │  └────────────────────────────┘ │
-                                            └──────────────────────────────────┘
+│  │         │                 │                   │          │     │
+│  │         └────────┬────────┴───────────────────┘          │     │
+│  │                  ▼                                       │     │
+│  │        app/services/embeddings.py                        │     │
+│  │        app/services/local_client.py (key + timeouts)     │     │
+│  └──────────────────┼───────────────────────────────────────┘     │
+│                     │                                               │
+│  ┌──────────────────▼───────────────────────────────────────┐     │
+│  │  app/config.py — loads config.yaml, rejects non-local     │     │
+│  │  base_url (no silent api.openai.com fallback)             │     │
+│  └──────────────────┬───────────────────────────────────────┘     │
+└─────────────────────┼───────────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│                CHROMADB CONTAINER                   │
+│                 (localhost:8001)                    │
+│                                                     │
+│  Collection: f1-regs  (cosine)                      │
+│  • one vector per clause part                       │
+│  • metadata: section, article, page, issue, ...     │
+│                                                     │
+│  Persistent storage: ./data/chroma (bind mount)     │
+└─────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────┐
-│                         DATA SOURCES                                 │
-│                                                                       │
-│  PDFs/ (6 files)                                                     │
-│  ├── Section A - General Provisions                                 │
-│  ├── Section B - Sporting                                           │
-│  ├── Section C - Technical                                          │
-│  ├── Section D - Financial (F1 Teams)                               │
-│  ├── Section E - Financial (PU Manufacturers)                       │
-│  └── Section F - Operational                                        │
-└─────────────────────────────────────────────────────────────────────┘
+                      ▲
+                      │  OpenAI-compatible HTTP
+                      │  (embeddings + chat)
+                      │
+┌─────────────────────┴───────────────────────────────┐
+│              LOCAL MODEL SERVER                     │
+│        host.docker.internal:1234/v1                 │
+│                                                     │
+│  LM Studio (default), or Ollama / llama.cpp / vLLM  │
+│  • text-embedding-bge-large-en-v1.5  (embeddings)   │
+│  • google/gemma-4-e4b               (chat)          │
+│                                                     │
+│  No internet. No API keys. No cloud calls.          │
+└─────────────────────────────────────────────────────┘
+
+
+DATA SOURCES:
+
+  PDFs/ (6 files)
+  ├── Section A - General Provisions
+  ├── Section B - Sporting
+  ├── Section C - Technical
+  ├── Section D - Financial (F1 Teams)
+  ├── Section E - Financial (PU Manufacturers)
+  └── Section F - Operational
 
 
 DATA FLOW:
 
-Ingestion (one-time):
-  PDFs → pymupdf parser → Semantic chunks (by article) → 
-  Embeddings (Gemini/local) → ChromaDB collection
+Ingestion (one-time, ~5–10 min):
+  PDFs → pymupdf parser → clause chunks (ARTICLE / C4.1 headings)
+       → local embeddings → ChromaDB collection "f1-regs"
 
 Query (real-time):
-  User question → Embedding → ChromaDB similarity search → 
-  Top-K chunks (filtered by threshold) → LLM prompt → 
-  Answer + Sources → User
+  Question → local embedding → ChromaDB similarity search
+           (+ direct clause lookup when the question names a code)
+  → group chunks into clauses → threshold filter
+  → prompt local chat model → answer + cited sources
 
 
 CONFIGURATION:
 
-Profile-based switching (config.yaml):
-  • cloud:  Gemini embeddings + Gemini LLM
-  • local:  bge-large embeddings + LM Studio LLM
+config.yaml (single, flat — no profiles):
+  • embedding.base_url / embedding.model
+  • llm.base_url / llm.model / llm.temperature
+  • collection: "f1-regs"
+  • top_k, similarity_threshold, pdf_directory
 
-Environment variables (.env):
-  • GOOGLE_API_KEY
-  • PROFILE (override)
-  • TOP_K, SIMILARITY_THRESHOLD (tuning)
+Environment variables (.env, all optional):
+  • LOCAL_API_KEY (default "lm-studio")
+  • TOP_K, SIMILARITY_THRESHOLD, PDF_DIRECTORY
+  • MAX_CHUNK_CHARS, CHUNK_OVERLAP_CHARS, MIN_CHUNK_CHARS
+  • LOCAL_EMBED_BATCH, EMBED_QUERY_PREFIX, EMBED_DOC_PREFIX
 ```
 
-## Key Design Decisions
+## Key design decisions
 
-1. **Two Collections**: Separate collections for different embedding dimensions (Gemini 768-dim vs bge-large 1024-dim)
+1. **Single collection** (`f1-regs`, cosine) — one embedding model, so one vector space. Switching the embedding model invalidates the collection and requires re-ingestion.
 
-2. **Semantic Chunking**: Chunk by article boundaries to preserve regulation structure and enable clean citations
+2. **Local-only guard**: `app/config.py` rejects a `base_url` that isn't loopback, `host.docker.internal`, or a private address. Without it, the OpenAI SDK silently defaults to `api.openai.com` when `base_url` is missing. See [`adr/0001-local-only-inference.md`](adr/0001-local-only-inference.md).
 
-3. **Profile-Based Config**: Single config switch between cloud/local modes, no code changes needed
+3. **Clause-based chunking**: chunk on `ARTICLE C4:` and `C4.1` boundaries so citations are exact and thresholds behave predictably.
 
-4. **Similarity Threshold**: Filter out low-relevance chunks before LLM generation (default 0.6)
+4. **Similarity threshold**: filter low-relevance chunks before generation (default 0.6), renumbering `ref` so citations have no gaps.
 
-5. **Metadata-Rich**: Store section, article, page, title with each chunk for detailed citations
+5. **Metadata-rich chunks**: section, article, clause title, page, issue and date travel with every vector.
 
-6. **Docker Compose**: Multi-container architecture teaching service orchestration and networking
+6. **One client factory**: `app/services/local_client.py` owns the fake key and the timeouts (connect 10s, embeddings 120s, LLM 300s), so an unresponsive server fails visibly.
 
-7. **Bind Mount**: ChromaDB data visible in project for inspection and backup
+7. **Vendored UI assets**: marked and DOMPurify live in `app/static/vendor/`; the UI has no CDN dependency.
 
-8. **Stateless API**: No session storage, each query is independent (ready for horizontal scaling)
+8. **Stateless API**: no session storage, each query independent.

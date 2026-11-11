@@ -51,5 +51,7 @@ class IngestResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    profile: str
+    embedding_model: str
+    llm_model: str
+    collection: str
     chroma_connected: bool
