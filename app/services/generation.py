@@ -4,6 +4,7 @@ import re
 from typing import List, Dict, Any, Set
 
 from app.config import config
+from app.services.local_client import LLM_TIMEOUT_S, build_client
 
 logger = logging.getLogger(__name__)
 
@@ -45,40 +46,18 @@ Relevant Regulations:
 
 Answer the question clearly and concisely in Markdown, citing specific article numbers when relevant. After each statement, cite the excerpt it comes from with its source number in square brackets, for example [1] or [2][3]. Only cite excerpts you actually used."""
 
-    # Call LLM based on provider
-    if config.llm_provider == "gemini":
-        import google.generativeai as genai
-        genai.configure(api_key=config.google_api_key)
+    # Call the local model server
+    client = build_client(config.llm_base_url, LLM_TIMEOUT_S)
 
-        model = genai.GenerativeModel(config.llm_model)
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
-                temperature=config.llm_temperature
-            )
-        )
-        return response.text
-
-    elif config.llm_provider == "local":
-        from openai import OpenAI
-
-        client = OpenAI(
-            base_url=config.llm_base_url,
-            api_key=config.openai_api_key or "not-needed"
-        )
-
-        response = client.chat.completions.create(
-            model=config.llm_model,
-            messages=[
-                {"role": "system", "content": "You are an expert on FIA Formula 1 regulations. Answer questions based only on the provided regulation excerpts."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=config.llm_temperature
-        )
-        return response.choices[0].message.content
-
-    else:
-        raise ValueError(f"Unknown LLM provider: {config.llm_provider}")
+    response = client.chat.completions.create(
+        model=config.llm_model,
+        messages=[
+            {"role": "system", "content": "You are an expert on FIA Formula 1 regulations. Answer questions based only on the provided regulation excerpts."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=config.llm_temperature
+    )
+    return response.choices[0].message.content
 
 
 # ---------------------------------------------------------------------------

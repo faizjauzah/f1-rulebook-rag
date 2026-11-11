@@ -1,14 +1,13 @@
 import os
 import re
-import time
 import logging
 from typing import List, Dict, Any
 
 import fitz  # pymupdf
 import chromadb
-from openai import OpenAI
 
 from app.config import config
+from app.services.embeddings import get_embeddings
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +17,6 @@ logger = logging.getLogger(__name__)
 MAX_CHARS = int(os.getenv("MAX_CHUNK_CHARS", "500"))      # ~250-350 tokens; lower to 700 if the embedder still errors
 OVERLAP = int(os.getenv("CHUNK_OVERLAP_CHARS", "120"))
 MIN_CHARS = int(os.getenv("MIN_CHUNK_CHARS", "200"))       # smaller sections get merged into the next one
-LOCAL_EMBED_BATCH = int(os.getenv("LOCAL_EMBED_BATCH", "16"))
-
-# Prefixes for the LOCAL embedding model (check your model card), e.g.
-#   nomic:        EMBED_QUERY_PREFIX="search_query: "   EMBED_DOC_PREFIX="search_document: "
-#   EmbeddingGemma: EMBED_QUERY_PREFIX="task: search result | query: "   EMBED_DOC_PREFIX="title: none | text: "
-#   bge / most others: leave both empty
-QUERY_PREFIX = os.getenv("EMBED_QUERY_PREFIX", "")
-DOC_PREFIX = os.getenv("EMBED_DOC_PREFIX", "")
 
 # ---------------------------------------------------------------------------
 # Filename metadata
@@ -257,83 +248,6 @@ def extract_chunks_from_pdf(pdf_path: str) -> List[Dict[str, Any]]:
                 },
             })
     return chunks
-
-
-# ---------------------------------------------------------------------------
-# Embeddings
-# ---------------------------------------------------------------------------
-def get_embeddings(
-    texts: List[str],
-    is_query: bool = False
-) -> List[List[float]]:
-    """Generate embeddings with Gemini rate-limit protection or a local OpenAI-compatible server."""
-
-    if config.embedding_provider == "gemini":
-        from google import genai
-
-        client = genai.Client(api_key=config.google_api_key)
-        embeddings = []
-
-        for i, text in enumerate(texts):
-            if is_query:
-                content = f"task: search result | query: {text}"
-            else:
-                content = f"title: FIA Formula One Regulations | text: {text}"
-
-            # Stay below the free-tier limit of 100 requests/minute.
-            if i > 0:
-                time.sleep(0.7)
-
-            # Retry if Gemini temporarily rejects the request.
-            for attempt in range(5):
-                try:
-                    result = client.models.embed_content(
-                        model=config.embedding_model,
-                        contents=content
-                    )
-                    embeddings.append(result.embeddings[0].values)
-                    break
-
-                except Exception as e:
-                    if "429" not in str(e):
-                        raise
-                    if attempt == 4:
-                        raise
-
-                    wait_time = 45 * (attempt + 1)
-                    logger.warning(f"Rate limit reached. Retrying in {wait_time} seconds...")
-                    time.sleep(wait_time)
-
-            if (i + 1) % 25 == 0:
-                logger.info(f"Generated {i + 1}/{len(texts)} embeddings")
-
-        return embeddings
-
-    elif config.embedding_provider == "local":
-        client = OpenAI(
-            base_url=config.embedding_base_url,
-            api_key="lm-studio"
-        )
-        prefix = QUERY_PREFIX if is_query else DOC_PREFIX
-        embeddings: List[List[float]] = []
-
-        for start in range(0, len(texts), LOCAL_EMBED_BATCH):
-            batch = [prefix + t for t in texts[start:start + LOCAL_EMBED_BATCH]]
-            response = client.embeddings.create(
-                model=config.embedding_model,
-                input=batch
-            )
-            data = sorted(response.data, key=lambda d: d.index)
-            embeddings.extend(item.embedding for item in data)
-
-            done = min(start + LOCAL_EMBED_BATCH, len(texts))
-            if (start // LOCAL_EMBED_BATCH) % 10 == 0:
-                logger.info(f"Generated {done}/{len(texts)} embeddings")
-
-        return embeddings
-
-    else:
-        raise ValueError(f"Unknown embedding provider: {config.embedding_provider}")
 
 
 # ---------------------------------------------------------------------------

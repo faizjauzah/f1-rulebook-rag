@@ -3,7 +3,6 @@ uvicorn[standard]==0.32.0
 python-dotenv==1.0.1
 pyyaml==6.0.2
 pydantic==2.12.5
-pydantic-settings==2.5.2
 
 # Vector store
 chromadb==1.5.9
@@ -11,9 +10,7 @@ chromadb==1.5.9
 # PDF processing
 pymupdf==1.24.10
 
-# Embeddings and LLM
-google-genai==2.34.0
-sentence-transformers==6.2.0
+# Embeddings and LLM (local OpenAI-compatible server)
 openai==1.55.3
 
 # Utils

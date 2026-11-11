@@ -1,26 +1,17 @@
 # 🏎️ F1 Rulebook RAG
 
-A Retrieval Augmented Generation (RAG) system for querying the 2026 FIA Formula 1 Regulations. Built to demonstrate modern AI engineering practices including vector search, LLM integration, REST API design, and containerization.
+A Retrieval Augmented Generation (RAG) system for querying the 2026 FIA Formula 1 Regulations — running **entirely on your machine**. Embeddings and answers come from a local OpenAI-compatible server (LM Studio by default); there are no API keys and no cloud calls anywhere in the stack.
 
 ## 🎯 Features
 
-- **Dual Operating Modes**: Cloud (Google Gemini) or Local (LM Studio + local embeddings)
-- **Semantic Search**: Retrieves relevant regulation articles using vector similarity
-- **Source Citations**: Every answer includes exact article references with page numbers
+- **Fully local inference**: local embeddings + local LLM, UI assets vendored, no network egress at runtime
+- **Semantic search**: retrieves relevant regulation clauses using vector similarity
+- **Source citations**: every answer cites the clause it came from, with page and issue
+- **Direct clause lookup**: asking about `C3.5.2` fetches that clause even if similarity ranking wouldn't
 - **REST API**: FastAPI with automatic OpenAPI documentation
-- **Simple Web UI**: Ask questions and view answers with sources
-- **Docker Compose**: Multi-container setup (API + ChromaDB)
-- **Configurable**: Profile-based config switching between cloud/local
-
-## 📋 Table of Contents
-
-- [Architecture](#architecture)
-- [Setup](#setup)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Evaluation](#evaluation)
-- [API Documentation](#api-documentation)
-- [Deployment](#deployment)
+- **Simple web UI**: ask questions, read answers with highlighted supporting paragraphs
+- **Docker Compose**: API + ChromaDB, nothing else
+- **Refuses to phone home**: a non-local `base_url` is a startup error, not a silent fallback
 
 ## 🏗 Architecture
 
@@ -33,403 +24,274 @@ A Retrieval Augmented Generation (RAG) system for querying the 2026 FIA Formula 
 ┌─────────────────────────────────────┐
 │         FastAPI Service             │
 │  ┌──────────┐  ┌─────────────────┐ │
-│  │ Ingestion│  │    Query        │ │
-│  │ Service  │  │    Service      │ │
-│  └────┬─────┘  └────┬────────────┘ │
-│       │             │               │
-│       ▼             ▼               │
+│  │ Ingestion│  │    Retrieval    │ │
+│  │ Service  │  │  + Generation   │ │
+│  └────┬─────┘  └────────┬────────┘ │
+│       │                 │           │
+│       ▼                 ▼           │
 │  ┌──────────────────────────────┐  │
 │  │     ChromaDB Vector Store     │  │
 │  └──────────────────────────────┘  │
-└─────────────────────────────────────┘
-          │                │
-          ▼                ▼
-    ┌─────────┐      ┌──────────┐
-    │ Gemini  │      │ LM Studio│
-    │   API   │      │  (Local) │
-    └─────────┘      └──────────┘
+└───────────────────────┬─────────────┘
+                        │  OpenAI-compatible HTTP
+                        ▼
+              ┌────────────────────┐
+              │  LM Studio         │
+              │  host.docker.      │
+              │  internal:1234     │
+              │  • embedding model │
+              │  • chat model      │
+              └────────────────────┘
 ```
 
 **Components:**
 
-- **FastAPI**: REST API + static file serving
-- **ChromaDB**: Vector database for embeddings
-- **Gemini API**: Cloud embeddings + LLM (free tier)
-- **LM Studio**: Local LLM inference (optional)
-- **sentence-transformers**: Local embeddings (bge-large-en-v1.5)
-- **pymupdf**: PDF text extraction with semantic chunking
+- **FastAPI**: REST API + static file serving (`app/services/`)
+- **ChromaDB**: vector store, cosine space, persisted to `./data/chroma`
+- **LM Studio** (or Ollama / llama.cpp / vLLM): serves both the embedding model and the chat model
+- **pymupdf**: PDF text extraction, clause-aware chunking
 
-**Data Flow:**
+**Data flow:**
 
-1. **Ingestion**: PDFs → pymupdf → semantic chunks (by article) → embeddings → ChromaDB
-2. **Query**: Question → embedding → similarity search → top-k chunks → LLM prompt → answer + sources
+1. **Ingestion**: PDFs → pymupdf → clause chunks → embeddings → ChromaDB
+2. **Query**: question → embedding → similarity search (+ direct clause lookup) → grouped sources → LLM → answer with citations
 
-## 🚀 Setup
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the detailed diagram and [`docs/adr/0001-local-only-inference.md`](docs/adr/0001-local-only-inference.md) for why this is local-only.
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Google AI Studio API key (free at https://ai.google.dev/)
-- (Optional) LM Studio for local mode
+- Docker + Docker Compose
+- [LM Studio](https://lmstudio.ai/) (or any OpenAI-compatible server) on the host
 
-### Quick Start
+### 1. Load two models in LM Studio
 
-1. **Clone and navigate:**
-   ```bash
-   cd f1-rulebook-rag
-   ```
+- **Embedding model**: `text-embedding-bge-large-en-v1.5`
+- **Chat model**: `google/gemma-4-e4b`
 
-2. **Create `.env` file:**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and add your Google API key:
-   ```
-   GOOGLE_API_KEY=your_actual_key_here
-   ```
+Start the local server on port **1234** (Developer tab → Start Server). The names must match `config.yaml`; if yours differ, edit that file.
 
-3. **Start services:**
-   ```bash
-   docker-compose up --build
-   ```
+### 2. Start the services
 
-4. **Wait for services** to be healthy (check logs for "Application startup complete")
+```bash
+./run.sh start
+```
 
-5. **Ingest PDFs** (one-time setup):
-   ```bash
-   curl -X POST http://localhost:8000/ingest
-   ```
-   
-   This takes ~5-20 minutes depending on your profile (local is faster).
+Wait for `Application startup complete` and a healthy ChromaDB.
 
-6. **Open UI**: http://localhost:8000
+### 3. Ingest the PDFs (once, ~5–10 min)
 
-### Local Mode Setup (Optional)
+```bash
+./run.sh ingest
+```
 
-To use local LLM instead of Gemini:
+### 4. Ask something
 
-1. **Install LM Studio**: https://lmstudio.ai/
+Open http://localhost:8000, or:
 
-2. **Load a model** (recommended: Mistral 7B or Llama 3.1 8B)
+```bash
+./run.sh query "What is the minimum mass of a car?"
+```
 
-3. **Start LM Studio server** on port 1234
-
-4. **Change profile** in `config.yaml`:
-   ```yaml
-   profile: "local"
-   ```
-
-5. **Restart containers**:
-   ```bash
-   docker-compose down
-   docker-compose up
-   ```
-
-6. **Ingest with local embeddings**:
-   ```bash
-   curl -X POST http://localhost:8000/ingest
-   ```
+There is no API key step. `.env` can stay empty.
 
 ## 💡 Usage
 
 ### Web UI
 
-1. Open http://localhost:8000
-2. Select profile (Cloud/Local)
-3. Type your question
-4. Get answer with source citations
+Type a question and read the answer; citation links jump to the source cards, and the paragraph(s) the answer relies on are highlighted.
 
-**Example questions:**
-- "What is DRS and when can it be used?"
-- "What happens if it rains during qualifying?"
+Example questions:
+- "What is the minimum mass of a car?"
+- "How are cost cap penalties determined?"
 - "What are the technical specifications for the power unit?"
+
+(The 2026 regulations replace DRS with active aerodynamics, so "What is DRS?" is correctly answered with "no relevant regulations".)
 
 ### API (curl)
 
-**Query:**
 ```bash
+# Query
 curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
   -d '{"question": "What is DRS?"}'
-```
 
-**Health check:**
-```bash
+# Health
 curl http://localhost:8000/health
-```
 
-**Re-ingest:**
-```bash
+# Re-ingest (recreates the collection)
 curl -X POST http://localhost:8000/ingest
 ```
 
-### API Documentation
-
-Interactive docs at http://localhost:8000/docs
+Interactive docs at http://localhost:8000/docs.
 
 ## ⚙️ Configuration
 
-### config.yaml
-
-Profile-based configuration:
+`config.yaml` is a single flat config — there are no profiles to switch:
 
 ```yaml
-profile: "cloud"  # or "local"
+embedding:
+  base_url: "http://host.docker.internal:1234/v1"
+  model: "text-embedding-bge-large-en-v1.5"
 
-profiles:
-  cloud:
-    embedding:
-      provider: "gemini"
-      model: "text-embedding-004"
-    llm:
-      provider: "gemini"
-      model: "gemini-1.5-flash"
-      temperature: 0.1
-    collection: "f1-regs-gemini"
-  
-  local:
-    embedding:
-      provider: "local"
-      model: "BAAI/bge-large-en-v1.5"
-    llm:
-      provider: "local"
-      base_url: "http://host.docker.internal:1234/v1"
-      model: "local-model"
-      temperature: 0.1
-    collection: "f1-regs-local"
+llm:
+  base_url: "http://host.docker.internal:1234/v1"
+  model: "google/gemma-4-e4b"
+  temperature: 0.1
 
-shared:
-  top_k: 5                      # Number of chunks to retrieve
-  chunk_size: 512               # Target chunk size (not strict)
-  similarity_threshold: 0.6     # Minimum similarity score
-  pdf_directory: "PDFs"
-  chroma_persist_directory: "/data/chroma"
+collection: "f1-regs"
+
+top_k: 5
+similarity_threshold: 0.6
+pdf_directory: "PDFs"
 ```
 
-### Environment Variables
+`base_url` must resolve to loopback, `host.docker.internal`, or a private network address. Anything else is rejected at startup with a clear error — this is a guard against the OpenAI SDK silently defaulting to `api.openai.com`. Pointing at another machine on your LAN works; pointing at a cloud endpoint does not.
 
-Override config via `.env`:
+Use LM Studio on a non-default port, or a different server entirely (Ollama, llama.cpp, vLLM) by changing `base_url` and the two model names.
 
-```bash
-PROFILE=local
-TOP_K=10
-SIMILARITY_THRESHOLD=0.7
-GOOGLE_API_KEY=your_key
-```
+### Environment variables (all optional)
+
+| Var | Default | Effect |
+|---|---|---|
+| `LOCAL_API_KEY` | `lm-studio` | Key sent to the local server (only needed if it has auth enabled) |
+| `TOP_K` | `5` | Sources returned per query |
+| `SIMILARITY_THRESHOLD` | `0.6` | Min similarity to keep a source |
+| `PDF_DIRECTORY` | `PDFs` | PDF input directory |
+| `MAX_CHUNK_CHARS` | `500` | Max chars per chunk part |
+| `CHUNK_OVERLAP_CHARS` | `120` | Overlap between split parts |
+| `MIN_CHUNK_CHARS` | `200` | Sections shorter than this merge into the next |
+| `LOCAL_EMBED_BATCH` | `16` | Embedding batch size |
+| `EMBED_QUERY_PREFIX` | *(empty)* | Prefix for query embeddings (model-card dependent) |
+| `EMBED_DOC_PREFIX` | *(empty)* | Prefix for document embeddings |
+| `CHROMA_HOST` / `CHROMA_PORT` | `localhost` / `8001` | ChromaDB address (set to `chroma:8000` in Compose) |
+| `EVAL_TIMEOUT` | `180` | Per-question client deadline for `./run.sh eval` (seconds) |
+
+`.env` is mounted into the container; changes need a restart, not a rebuild.
 
 ## 📊 Evaluation
 
-Run the evaluation suite:
-
 ```bash
-# Inside the container or with Python 3.11+
-python eval/run_eval.py
+./run.sh eval
 ```
 
-**Eval set:** 10 questions spanning:
-- **Difficulty**: 3 easy, 4 medium, 3 hard
-- **Coverage**: All 6 regulation sections (A-F)
+10 questions (`eval/questions.json`) across all six regulation sections, with easy/medium/hard difficulty. Results go to `eval/results.json`. Ingestion must have completed first, and the chat model must be loaded in LM Studio.
 
-Results are saved to `eval/results.json` and printed as a summary table.
+Local generation is slow: on `google/gemma-4-e4b` expect roughly 60–130 seconds per question (about 15 minutes for the suite). The eval client deadline is `EVAL_TIMEOUT` (default `180` seconds) — raise it if your model is slower.
 
-**Example output:**
-```
-EVALUATION SUMMARY
-================================================================================
-
-Total questions: 10
-Successful: 10
-Failed: 0
-Average response time: 3.45s
-
-By category:
-  Easy: 3/3
-  Medium: 4/4
-  Hard: 3/3
-```
-
-## 📚 API Documentation
+## 📚 API Reference
 
 ### POST /query
 
-Query the RAG system.
-
-**Request:**
 ```json
-{
-  "question": "What is DRS?"
-}
+{ "question": "What is DRS?" }
 ```
 
-**Response:**
 ```json
 {
-  "answer": "DRS (Drag Reduction System) is...",
+  "answer": "DRS (Drag Reduction System) ... [1]",
   "sources": [
     {
-      "section": "B",
-      "section_name": "Sporting",
-      "doc_title": "FIA 2026 F1 Regulations - Section B [Sporting]",
-      "article": "12.3",
-      "article_title": "DRS Activation",
-      "page": 47,
-      "text": "The DRS may only be activated..."
+      "ref": 1,
+      "label": "Article C3.5.2 – Floor Foot",
+      "section": "C",
+      "section_name": "Technical",
+      "doc_title": "FIA 2026 F1 Regulations - Section C [Technical] - Iss 09 - 2026-10-01",
+      "article": "C3.5.2",
+      "article_title": "Floor Foot",
+      "page": 59,
+      "issue": "09",
+      "date": "2026-10-01",
+      "similarity": 0.83,
+      "match": "semantic",
+      "cited": true,
+      "truncated": false,
+      "paragraphs": [
+        { "text": "C3.5.2.1 ...", "highlight": true }
+      ]
     }
   ],
   "metadata": {
-    "model": "gemini-1.5-flash",
-    "chunks_retrieved": 5,
-    "chunks_used": 3,
-    "response_time_ms": 1247
+    "model": "google/gemma-4-e4b",
+    "chunks_retrieved": 15,
+    "chunks_used": 5,
+    "response_time_ms": 4210
   }
 }
 ```
 
+`match` is `semantic` or `article_number` (direct clause lookup). `cited` is true when the answer cites that `ref`. Full source text lives in `paragraphs`; `highlight` marks the paragraph(s) backing the answer.
+
 ### POST /ingest
 
-Ingest PDFs into the vector store (one-time setup per collection).
+Recreates the collection and re-embeds every PDF in `PDF_DIRECTORY`.
 
-**Response:**
 ```json
-{
-  "status": "success",
-  "message": "Successfully ingested 6 PDFs",
-  "chunks_created": 342,
-  "collection": "f1-regs-gemini"
-}
+{ "status": "success", "message": "Successfully ingested 6 PDFs", "chunks_created": 342, "collection": "f1-regs" }
 ```
 
 ### GET /health
 
-Health check.
-
-**Response:**
 ```json
 {
   "status": "healthy",
-  "profile": "cloud",
+  "embedding_model": "text-embedding-bge-large-en-v1.5",
+  "llm_model": "google/gemma-4-e4b",
+  "collection": "f1-regs",
   "chroma_connected": true
 }
 ```
 
-## 🌐 Deployment
+## 🧪 Smoke Test
 
-### Fly.io (Recommended)
-
-1. **Install flyctl**: https://fly.io/docs/flyctl/install/
-
-2. **Login**:
-   ```bash
-   fly auth login
-   ```
-
-3. **Create app**:
-   ```bash
-   fly launch
-   ```
-
-4. **Set secrets**:
-   ```bash
-   fly secrets set GOOGLE_API_KEY=your_key
-   ```
-
-5. **Create volume** for ChromaDB:
-   ```bash
-   fly volumes create chroma_data --size 1
-   ```
-
-6. **Update fly.toml** to mount volume (adjust as needed)
-
-7. **Deploy**:
-   ```bash
-   fly deploy
-   ```
-
-8. **Ingest** (one-time):
-   ```bash
-   curl -X POST https://your-app.fly.dev/ingest
-   ```
-
-### Other Platforms
-
-- **Railway**: Similar process, use Railway CLI
-- **Render**: Deploy from GitHub, add environment variables
-- **Google Cloud Run**: Use Cloud SQL for ChromaDB persistence
-
-## 🧪 Testing
-
-**Smoke test** (5 varied queries):
 ```bash
-# Easy
-curl -X POST http://localhost:8000/query -H "Content-Type: application/json" -d '{"question": "What is DRS?"}'
-
-# Medium
-curl -X POST http://localhost:8000/query -H "Content-Type: application/json" -d '{"question": "What happens if a driver causes a collision?"}'
-
-# Hard
-curl -X POST http://localhost:8000/query -H "Content-Type: application/json" -d '{"question": "How do cost cap regulations interact with power unit manufacturer regulations?"}'
-
-# Off-topic (should gracefully fail)
-curl -X POST http://localhost:8000/query -H "Content-Type: application/json" -d '{"question": "What is the weather tomorrow?"}'
-
-# Edge case
-curl -X POST http://localhost:8000/query -H "Content-Type: application/json" -d '{"question": "Tell me about basketball rules"}'
+./smoke_test.sh
 ```
+
+Five HTTP assertions covering health and a few query shapes, including off-topic questions that should be declined.
 
 ## 📁 Project Structure
 
 ```
 /
-├── README.md
 ├── app/
-│   ├── main.py                 # FastAPI application
-│   ├── config.py               # Configuration loading
+│   ├── main.py                 # FastAPI application + startup logging
+│   ├── config.py               # config.yaml loader + local-endpoint guard
 │   ├── api/
-│   │   ├── routes.py           # API endpoints
-│   │   └── models.py           # Pydantic models
+│   │   ├── routes.py           # /health, /ingest, /query
+│   │   └── models.py           # Pydantic response models
 │   ├── services/
-│   │   ├── ingestion.py        # PDF processing & embedding
-│   │   ├── retrieval.py        # Vector search
-│   │   └── generation.py       # LLM answer generation
+│   │   ├── ingestion.py        # PDF parsing, clause chunking, Chroma writes
+│   │   ├── embeddings.py       # batched local embeddings
+│   │   ├── local_client.py     # OpenAI-compatible client (key + timeouts)
+│   │   ├── retrieval.py        # direct lookup + vector search + grouping
+│   │   └── generation.py       # prompt, answer, source formatting
 │   └── static/
-│       └── index.html          # Web UI
+│       ├── index.html          # Web UI
+│       └── vendor/             # marked + DOMPurify (no CDN)
 ├── eval/
-│   ├── questions.json          # Evaluation questions
-│   └── run_eval.py             # Evaluation script
-├── PDFs/                       # F1 regulation PDFs (6 files)
+│   ├── questions.json
+│   └── run_eval.py
+├── docs/
+│   ├── ARCHITECTURE.md
+│   └── adr/0001-local-only-inference.md
+├── PDFs/                       # F1 regulation PDFs
 ├── data/chroma/                # ChromaDB persistence (gitignored)
-├── config.yaml                 # Profile-based config
-├── .env                        # API keys (gitignored)
-├── .env.example
+├── config.yaml
 ├── requirements.txt
 ├── Dockerfile
-└── docker-compose.yml
+├── docker-compose.yml
+└── run.sh
 ```
 
 ## 🛠 Technology Stack
 
-- **FastAPI**: Modern Python web framework
-- **ChromaDB**: Vector database
-- **Google Gemini**: Cloud LLM + embeddings
-- **sentence-transformers**: Local embeddings (bge-large-en-v1.5)
-- **LM Studio**: Local LLM server
+- **FastAPI** + **Pydantic**: API and validation
+- **ChromaDB 1.5.9**: vector store (cosine)
+- **LM Studio**: local embedding + chat server (OpenAI-compatible)
 - **pymupdf**: PDF parsing
-- **Docker**: Containerization
-- **Pydantic**: Data validation
-
-## 🎓 Learning Outcomes
-
-This project demonstrates:
-
-✅ **RAG Architecture**: Document chunking, embeddings, vector search, prompt engineering  
-✅ **REST API Design**: FastAPI, Pydantic models, error handling, response formatting  
-✅ **Docker**: Multi-container orchestration, networking, volumes, healthchecks  
-✅ **Configuration Management**: Profile-based config, environment variables, secrets  
-✅ **LLM Integration**: Multiple providers (Gemini, OpenAI-compatible), prompt engineering  
-✅ **Vector Databases**: ChromaDB setup, collection management, similarity search  
-✅ **PDF Processing**: Semantic chunking, metadata extraction  
-✅ **Edge Case Handling**: Off-topic detection, similarity thresholds, graceful errors  
+- **Docker Compose**: API + ChromaDB
 
 ## 📝 Future Enhancements
 
@@ -438,18 +300,8 @@ This project demonstrates:
 - [ ] Query rewriting for better retrieval
 - [ ] Streaming responses
 - [ ] Advanced eval metrics (RAGAS, faithfulness)
-- [ ] CI/CD pipeline
-- [ ] Rate limiting
-- [ ] Caching frequent queries
+- [ ] CI pipeline
 
 ## 📄 License
 
 MIT
-
-## 🤝 Contributing
-
-This is a portfolio project, but feedback and suggestions are welcome via issues.
-
----
-
-**Built with ❤️ for AI engineering portfolio**

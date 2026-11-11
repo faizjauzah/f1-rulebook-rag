@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>F1 Rulebook RAG</title>
 
-    <!-- Markdown rendering + sanitizing (needs internet; falls back to plain text if blocked) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <!-- Markdown rendering + sanitizing, vendored so the UI works fully offline -->
+    <script src="/static/vendor/marked.min.js"></script>
+    <script src="/static/vendor/purify.min.js"></script>
 
     <style>
       :root {
@@ -550,7 +550,7 @@
       fetch("/health")
         .then((r) => r.json())
         .then((h) => {
-          $("status").textContent = `${h.chroma_connected ? "●" : "○"} ChromaDB ${h.chroma_connected ? "connected" : "unreachable"} · profile: ${h.profile}`;
+          $("status").textContent = `${h.chroma_connected ? "●" : "○"} ChromaDB ${h.chroma_connected ? "connected" : "unreachable"} · ${h.llm_model}`;
         })
         .catch(() => {
           $("status").textContent = "○ API unreachable";
@@ -570,7 +570,7 @@
           target.innerHTML = DOMPurify.sanitize(marked.parse(text));
           linkCitations(target, sourceCount);
         } else {
-          // CDN blocked / offline: still readable as plain text
+          // vendor script failed to load: still readable as plain text
           target.style.whiteSpace = "pre-wrap";
           target.textContent = text;
         }
