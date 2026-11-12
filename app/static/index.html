@@ -13,10 +13,63 @@
       :root {
         --fg: #111;
         --text: #222;
+        --text-soft: #444;
         --muted: #6b6b6b;
-        --line: #e4e4e4;
-        --soft: #f6f6f6;
+        --line: #e5e1dd;
+        --line-strong: #d8d2cc;
+        --soft: #f7f5f3;
         --bg: #fff;
+
+        /* Interaction: red does exactly one job — "this is interactive / evidence" */
+        --accent: #c8102e;
+        --accent-hover: #a80d26;
+        --accent-soft: #fdf2f4;
+        --accent-line: #f2c6cf;
+        --accent-ring: rgba(200, 16, 46, 0.16);
+
+        /* Semantic states: green is reserved for health, amber for highlighted passages */
+        --ok: #15803d;
+        --hl-bg: #fdf6e8;
+        --hl-rule: #e8b04b;
+
+        --shadow: 0 1px 2px rgba(17, 17, 17, 0.05), 0 4px 12px rgba(17, 17, 17, 0.04);
+
+        /* Identity: one hue per regulation section (default = unknown section) */
+        --sec: #6b6b6b;
+        --sec-soft: #f2f0ee;
+        --sec-rule: transparent;
+      }
+
+      /* Section hues, each measured >= 5:1 as text on white */
+      [data-section="A"] {
+        --sec: #475569;
+        --sec-soft: #edeef0;
+        --sec-rule: #475569;
+      }
+      [data-section="B"] {
+        --sec: #1d4ed8;
+        --sec-soft: #e8edfb;
+        --sec-rule: #1d4ed8;
+      }
+      [data-section="C"] {
+        --sec: #0f766e;
+        --sec-soft: #e7f1f1;
+        --sec-rule: #0f766e;
+      }
+      [data-section="D"] {
+        --sec: #ad4d08;
+        --sec-soft: #f8eee6;
+        --sec-rule: #ad4d08;
+      }
+      [data-section="E"] {
+        --sec: #9a3412;
+        --sec-soft: #f5ebe7;
+        --sec-rule: #9a3412;
+      }
+      [data-section="F"] {
+        --sec: #6d28d9;
+        --sec-soft: #f0eafb;
+        --sec-rule: #6d28d9;
       }
 
       * {
@@ -25,12 +78,18 @@
         box-sizing: border-box;
       }
 
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background: var(--bg);
         color: var(--text);
         line-height: 1.6;
         padding: 48px 20px 80px;
+        border-top: 3px solid var(--accent);
       }
 
       .container {
@@ -57,13 +116,19 @@
         font-size: 0.8rem;
         color: var(--muted);
       }
+      .status .dot.ok {
+        color: var(--ok);
+      }
+      .status .dot.bad {
+        color: var(--accent);
+      }
 
       /* ---------- Form ---------- */
       textarea {
         width: 100%;
         min-height: 96px;
         padding: 14px 16px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--line-strong);
         border-radius: 8px;
         font: inherit;
         color: var(--fg);
@@ -71,7 +136,8 @@
       }
       textarea:focus {
         outline: none;
-        border-color: var(--fg);
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-ring);
       }
 
       .form-row {
@@ -88,9 +154,9 @@
       }
 
       button.primary {
-        background: var(--fg);
+        background: var(--accent);
         color: #fff;
-        border: 1px solid var(--fg);
+        border: 1px solid var(--accent);
         border-radius: 8px;
         padding: 10px 22px;
         font: inherit;
@@ -98,7 +164,8 @@
         cursor: pointer;
       }
       button.primary:hover {
-        background: #000;
+        background: var(--accent-hover);
+        border-color: var(--accent-hover);
       }
       button.primary:disabled {
         opacity: 0.5;
@@ -122,7 +189,9 @@
         cursor: pointer;
       }
       .chip:hover {
-        border-color: var(--fg);
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent-hover);
       }
 
       /* ---------- Loading / error ---------- */
@@ -138,7 +207,7 @@
         height: 12px;
         margin-right: 8px;
         border: 2px solid var(--line);
-        border-top-color: var(--fg);
+        border-top-color: var(--accent);
         border-radius: 50%;
         vertical-align: -2px;
         animation: spin 0.8s linear infinite;
@@ -152,8 +221,10 @@
       .error {
         margin-top: 32px;
         padding: 14px 16px;
-        border: 1px solid var(--fg);
+        border: 1px solid var(--accent-line);
         border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent-hover);
         font-size: 0.9rem;
       }
 
@@ -173,8 +244,9 @@
       .answer-card {
         margin-top: 10px;
         padding: 22px 24px;
-        border: 1px solid var(--fg);
+        border: 1px solid var(--line);
         border-radius: 10px;
+        box-shadow: var(--shadow);
       }
 
       /* ---------- Markdown ---------- */
@@ -221,8 +293,12 @@
         color: var(--fg);
       }
       .md a {
-        color: var(--fg);
+        color: var(--accent);
         text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .md a:hover {
+        color: var(--accent-hover);
       }
       .md code {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -245,9 +321,9 @@
         padding: 0;
       }
       .md blockquote {
-        border-left: 3px solid var(--fg);
+        border-left: 3px solid var(--line-strong);
         padding: 2px 0 2px 14px;
-        color: #444;
+        color: var(--text-soft);
       }
       .md hr {
         border: none;
@@ -275,11 +351,11 @@
       a.cite {
         text-decoration: none;
         font-weight: 600;
-        color: var(--fg);
-        border-bottom: 1px solid var(--fg);
+        color: var(--accent);
+        border-bottom: 1px solid var(--accent);
       }
       a.cite:hover {
-        background: var(--fg);
+        background: var(--accent);
         color: #fff;
       }
 
@@ -302,7 +378,7 @@
         cursor: pointer;
       }
       .link-btn:hover {
-        color: var(--fg);
+        color: var(--accent);
       }
 
       .source-list {
@@ -314,17 +390,20 @@
 
       details.source {
         border: 1px solid var(--line);
+        border-left: 3px solid var(--sec-rule);
         border-radius: 8px;
         transition:
           border-color 0.2s,
           background 0.2s;
       }
       details.source[open] {
-        border-color: #bbb;
+        border-color: var(--line-strong);
+        border-left-color: var(--sec-rule);
       }
       details.source.flash {
-        border-color: var(--fg);
-        background: var(--soft);
+        border-color: var(--accent);
+        border-left-color: var(--sec-rule);
+        background: var(--accent-soft);
       }
 
       details.source summary {
@@ -358,11 +437,12 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid var(--fg);
+        border: 1px solid currentColor;
         border-radius: 6px;
+        background: var(--sec-soft);
         font-size: 0.8rem;
         font-weight: 700;
-        color: var(--fg);
+        color: var(--sec);
       }
 
       .source-info {
@@ -384,8 +464,10 @@
         display: inline-block;
         margin-left: 8px;
         padding: 0 6px;
-        border: 1px solid var(--fg);
+        border: 1px solid var(--accent-line);
         border-radius: 4px;
+        background: var(--accent-soft);
+        color: var(--accent-hover);
         font-size: 0.66rem;
         font-weight: 700;
         letter-spacing: 0.05em;
@@ -397,9 +479,9 @@
       .source-preview {
         margin-top: 8px;
         padding-left: 10px;
-        border-left: 2px solid #ccc;
+        border-left: 2px solid var(--line-strong);
         font-size: 0.86rem;
-        color: #444;
+        color: var(--text-soft);
         display: -webkit-box;
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
@@ -414,7 +496,7 @@
         padding: 14px 16px 16px 50px;
         border-top: 1px solid var(--line);
         font-size: 0.92rem;
-        color: #333;
+        color: var(--text);
       }
       .source-body p {
         margin: 0 0 10px;
@@ -424,8 +506,8 @@
         margin-bottom: 0;
       }
       .source-body p.hl {
-        background: var(--soft);
-        border-left: 3px solid var(--fg);
+        background: var(--hl-bg);
+        border-left: 3px solid var(--hl-rule);
         padding: 8px 12px;
         color: var(--fg);
       }
@@ -446,8 +528,8 @@
         width: 10px;
         height: 10px;
         margin-right: 6px;
-        background: var(--soft);
-        border-left: 3px solid var(--fg);
+        background: var(--hl-bg);
+        border-left: 3px solid var(--hl-rule);
       }
       .note {
         margin-top: 12px;
@@ -518,6 +600,7 @@
 
       const EXAMPLES = [
         "What does Article C3.2.1 say?",
+        "Explain to me the F1 world championship",
         "What is the minimum weight of the car?",
         "What is the maximum fuel flow rate?",
         "Tell me everything about the rules for Power Unit",
@@ -550,11 +633,21 @@
       fetch("/health")
         .then((r) => r.json())
         .then((h) => {
-          $("status").textContent = `${h.chroma_connected ? "●" : "○"} ChromaDB ${h.chroma_connected ? "connected" : "unreachable"} · ${h.llm_model}`;
+          renderStatus(h.chroma_connected, `ChromaDB ${h.chroma_connected ? "connected" : "unreachable"} · ${h.llm_model}`);
         })
         .catch(() => {
-          $("status").textContent = "○ API unreachable";
+          renderStatus(false, "API unreachable");
         });
+
+      // Status dot is the only place green appears: green = healthy, red = problem.
+      function renderStatus(healthy, text) {
+        const status = $("status");
+        status.textContent = "";
+        const dot = document.createElement("span");
+        dot.className = "dot " + (healthy ? "ok" : "bad");
+        dot.textContent = "●";
+        status.append(dot, " " + text);
+      }
 
       questionInput.addEventListener("keydown", (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -674,6 +767,8 @@
           const details = document.createElement("details");
           details.className = "source";
           details.id = "source-" + num;
+          // Section drives the card's identity hue (A–F); unknown sections stay neutral.
+          details.dataset.section = s.section || "";
 
           // --- collapsed header: number, title, meta, key passage ---
           const summary = document.createElement("summary");
