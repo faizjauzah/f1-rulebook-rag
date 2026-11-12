@@ -46,7 +46,7 @@ The paragraph within a source that the heuristic judges to support the answer. A
 True when a source's ref appears in the answer text. Distinct from highlight: a source can be retrieved and highlighted but never cited.
 
 **Truncated**:
-True when a clause had more parts than `MAX_PARTS_PER_SOURCE` and the source text was cut.
+True when a clause exceeded `MAX_SOURCE_CHARS` and the source text was cut.
 
 ### Inference
 

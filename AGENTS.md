@@ -28,7 +28,7 @@ There is no cloud provider and no profile switch. Embeddings and generation both
 
 ## Ingestion timing
 
-- Local: ~5–10 minutes for all six PDFs (~8.5 min measured for 6,080 chunks; embedding model must be loaded; batch size `LOCAL_EMBED_BATCH`, default 16).
+- Local: ~5–10 minutes for all six PDFs (embedding model must be loaded; batch size `LOCAL_EMBED_BATCH`, default 16). The current clause chunking yields ~3,058 chunks; an earlier configuration produced 6,080 and took ~8.5 min.
 
 Embeddings are generated **before** the existing collection is deleted, so a failed run does not wipe prior data. Chunks are added in batches sized to ChromaDB's max batch size.
 
@@ -69,11 +69,12 @@ Metadata stored per chunk: `section`, `section_name`, `issue`, `date`, `doc_titl
 | `TOP_K` | `5` | Sources returned per query |
 | `SIMILARITY_THRESHOLD` | `0.6` | Min similarity to keep a source |
 | `PDF_DIRECTORY` | `PDFs` | PDF input dir |
-| `MAX_CHUNK_CHARS` | `500` | Max chars per chunk part |
+| `MAX_CHUNK_CHARS` | `800` | Max chars per chunk part |
+| `MAX_CHUNK_TOKENS` | `400` | Estimated token cap per embedded chunk |
 | `CHUNK_OVERLAP_CHARS` | `120` | Overlap between split parts |
 | `MIN_CHUNK_CHARS` | `200` | Merge smaller sections into next |
 | `LOCAL_EMBED_BATCH` | `16` | Embedding batch size |
-| `EMBED_QUERY_PREFIX` | `` | Prefix for query embeddings (model-card dependent) |
+| `EMBED_QUERY_PREFIX` | bge instruction | Prefix for query embeddings (model-card dependent) |
 | `EMBED_DOC_PREFIX` | `` | Prefix for document embeddings |
 | `EVAL_TIMEOUT` | `180` | Per-question deadline for `eval/run_eval.py` (seconds) |
 
@@ -102,7 +103,7 @@ Static UI served from `app/static/index.html` at root `/`. The UI consumes the s
 2. **Semantic search**: embed the question (with `is_query=True`) and query `top_k * 3` chunks (candidate multiplier).
 3. **TOC filtering**: drop chunks that look like table-of-contents text before ranking.
 4. **Grouping**: chunks collapse into one source per clause (keyed by `doc_title` + `article` + `page`; page is part of the key so TOC entries never merge with bodies).
-5. **Expansion**: fetch all parts of each clause so a source is never truncated mid-clause (capped at `MAX_PARTS_PER_SOURCE = 4`).
+5. **Expansion**: fetch all parts of each clause so a source is never truncated mid-clause (capped by `MAX_SOURCE_CHARS = 3500`; longer clauses set `truncated: true`).
 6. **Threshold filter**: `filter_by_threshold()` drops sources below `similarity_threshold` and renumbers `ref` with no gaps.
 
 ### Generation (`app/services/generation.py`)
