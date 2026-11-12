@@ -3,7 +3,7 @@ import re
 import logging
 from typing import List, Dict, Any
 
-import fitz  # pymupdf
+import fitz  # pymupdf (>= 1.23 for find_tables)
 import chromadb
 
 from app.config import config
@@ -14,9 +14,14 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Tunables (override with env vars if needed)
 # ---------------------------------------------------------------------------
-MAX_CHARS = int(os.getenv("MAX_CHUNK_CHARS", "500"))      # ~250-350 tokens; lower to 700 if the embedder still errors
+# bge-large-en-v1.5 accepts 512 tokens. 800 chars is ~200 tokens of normal prose and ~400 in the
+# worst case (dense numbers / clause codes), so it always fits. Don't go above ~1000.
+MAX_CHARS = int(os.getenv("MAX_CHUNK_CHARS", "800"))
 OVERLAP = int(os.getenv("CHUNK_OVERLAP_CHARS", "120"))
 MIN_CHARS = int(os.getenv("MIN_CHUNK_CHARS", "200"))       # smaller sections get merged into the next one
+# Embedder limit: bge-large-en-v1.5 = 512 tokens. Clause codes and numbers ("C3.5.2", "724") cost
+# ~1 token per character, so a character limit alone is not safe. est_tokens() is a conservative estimate.
+MAX_CHUNK_TOKENS = int(os.getenv("MAX_CHUNK_TOKENS", "400"))   # whole embedded text: context + heading + body
 
 # ---------------------------------------------------------------------------
 # Filename metadata
@@ -47,6 +52,7 @@ TOC_LINE_RE = re.compile(r"^(?:ARTICLE\s+)?[A-F]\d+(?:\.\d+)*:?\s.*\s\d{1,3}$") 
 
 NOISE_RES = [
     re.compile(r"^SECTION [A-F]: [A-Z ]+$"),                                          # running page header
+    re.compile(r"^\d{4} Formula 1: .+$"),                                              # "2026 Formula 1: General Regulatory Provisions"
     re.compile(r"^[A-F]\d+ \d{4} Formula 1 Regulations - Section [A-F] \[[^\]]+\]$"),  # running footer
     re.compile(r"^©\s?\d{4}\s.*Automobile$"),                                          # copyright
     re.compile(r"^\d{1,2} [A-Za-z]+ \d{4}$"),                                          # 19 October 2026
@@ -138,19 +144,87 @@ def looks_like_title(text: str) -> bool:
     )
 
 
-def split_text(text: str, limit: int) -> List[str]:
-    """Split long text on line/sentence boundaries with a small overlap."""
+# ---------------------------------------------------------------------------
+# Tables: get_text() puts every cell on its own line ("1st" / "6" / "13" / ...), which destroys
+# the row/column structure. Tables are rebuilt as "1st | 6 | 13 | 19 | 25" rows instead
+# ("-" = empty cell), so the LLM can see which number belongs to which column.
+# ---------------------------------------------------------------------------
+def _table_row_lines(table) -> List[str]:
+    rows = []
+    for row in table.extract():
+        cells = [(c or "").replace("\n", " ").strip() or "-" for c in row]
+        if all(c == "-" for c in cells):
+            continue
+        rows.append(" | ".join(cells))
+    return rows
+
+
+def extract_page_lines(page) -> List[str]:
+    """Page text line by line (original reading order), with tables replaced by ' | ' rows."""
+    try:
+        height = page.rect.height
+        tables = [
+            t for t in page.find_tables().tables
+            if t.row_count >= 2 and t.col_count >= 2
+            and t.bbox[3] > height * 0.12      # ignore the boxed running header
+            and t.bbox[1] < height * 0.92      # ...and the footer
+        ]
+    except Exception as e:
+        logger.warning(f"Table detection failed on page {page.number + 1}: {e}")
+        tables = []
+
+    if not tables:
+        return page.get_text().split("\n")
+
+    lines: List[str] = []
+    emitted = set()
+    for block in page.get_text("blocks"):
+        x0, y0, x1, y1, text, _block_no, block_type = block[:7]
+        if block_type != 0:          # image block
+            continue
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        owner = next(
+            (i for i, t in enumerate(tables)
+             if t.bbox[0] <= cx <= t.bbox[2] and t.bbox[1] <= cy <= t.bbox[3]),
+            None,
+        )
+        if owner is None:
+            lines.extend(text.split("\n"))
+        elif owner not in emitted:
+            # first text block of the table: emit the whole table here, skip its other blocks
+            emitted.add(owner)
+            lines.extend(_table_row_lines(tables[owner]))
+    return lines
+
+
+_TOKEN_EST_RE = re.compile(r"[A-Za-z]+|\d|[^\w\s]|[^\x00-\x7f]")
+
+
+def est_tokens(text: str) -> int:
+    """Conservative estimate of BERT WordPiece tokens: every digit and punctuation mark counts as one, long words as several."""
+    n = 0
+    for t in _TOKEN_EST_RE.findall(text):
+        n += 1 + len(t) // 8 if t[0].isalpha() else 1
+    return n
+
+
+def split_text(text: str, limit: int, max_tokens: int = MAX_CHUNK_TOKENS) -> List[str]:
+    """Split long text on line/sentence boundaries with a small overlap, within a char AND token budget."""
     limit = max(limit, 300)
-    if len(text) <= limit:
+    if len(text) <= limit and est_tokens(text) <= max_tokens:
         return [text]
 
     parts, start = [], 0
     while start < len(text):
         end = min(start + limit, len(text))
+        # token-dense text (clause codes, numbers): shrink the window until it fits the embedder
+        while end - start > 150 and est_tokens(text[start:end]) > max_tokens:
+            end = start + int((end - start) * 0.85)
         if end < len(text):
-            cut = text.rfind("\n", start + limit // 2, end)
+            half = start + (end - start) // 2
+            cut = text.rfind("\n", half, end)
             if cut == -1:
-                cut = text.rfind(". ", start + limit // 2, end)
+                cut = text.rfind(". ", half, end)
             if cut != -1:
                 end = cut + 1
         piece = text[start:end].strip()
@@ -183,10 +257,14 @@ def extract_chunks_from_pdf(pdf_path: str) -> List[Dict[str, Any]]:
     seen_clauses = set()
 
     for page_num, page in enumerate(doc, start=1):
-        lines = [clean_line(l) for l in page.get_text().split("\n")]
-        lines = [l for l in lines if l and not is_noise(l)]
-        if is_toc_page(lines):
+        # Table-of-contents detection relies on the one-cell-per-line layout, so use the plain text
+        plain = [clean_line(l) for l in page.get_text().split("\n")]
+        plain = [l for l in plain if l and not is_noise(l)]
+        if is_toc_page(plain):
             continue
+
+        lines = [clean_line(l) for l in extract_page_lines(page)]
+        lines = [l for l in lines if l and not is_noise(l)]
         lines = join_split_headings(lines)
 
         for line in lines:
@@ -231,8 +309,10 @@ def extract_chunks_from_pdf(pdf_path: str) -> List[Dict[str, Any]]:
 
         context = f"[{s['article']}: {s['article_title']}]"
         limit = MAX_CHARS - len(context) - len(heading) - 20
+        # tokens left for the body after the context line, heading and "(continued)" are added
+        token_budget = max(MAX_CHUNK_TOKENS - est_tokens(context) - est_tokens(heading) - 8, 120)
 
-        for j, piece in enumerate(split_text(text, limit), start=1):
+        for j, piece in enumerate(split_text(text, limit, token_budget), start=1):
             if j > 1:
                 piece = f"{heading} (continued)\n{piece}"
             chunks.append({
@@ -286,7 +366,9 @@ def ingest_pdfs() -> Dict[str, Any]:
         }
 
     lengths = [len(c["text"]) for c in all_chunks]
+    tokens = [est_tokens(c["text"]) for c in all_chunks]
     logger.info(f"Chunk length (chars): min={min(lengths)}, max={max(lengths)}, avg={sum(lengths)//len(lengths)}")
+    logger.info(f"Chunk size (est. tokens): max={max(tokens)}, avg={sum(tokens)//len(tokens)}")
 
     # 2. Embed BEFORE touching the existing collection, so a failure doesn't wipe your data
     logger.info(f"Generating embeddings for {len(all_chunks)} chunks...")

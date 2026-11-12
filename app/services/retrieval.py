@@ -15,7 +15,7 @@ chunk). Every item looks like this:
         "issue": "21",
         "date": "2026-10-01",
         "citation": "Section C [Technical] · Article C4.1 – Minimum Mass · p. 59 · Issue 21 (2026-10-01)",
-        "text": "Full clause text (internal prefixes removed, parts merged) - sent to the LLM",
+        "text": "Full clause text (internal prefixes removed, parts merged, reflowed) - sent to the LLM",
         "paragraphs": ["C4.1.1 The minimum mass ...", "C4.1.2 ..."],   # same text, reflowed for display
         "similarity": 0.83,                         # 1.0 for direct article-number matches
         "match": "semantic" | "article_number",
@@ -26,6 +26,7 @@ chunk). Every item looks like this:
 filter_by_threshold() keeps its name and signature.
 """
 import logging
+import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -41,7 +42,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 CANDIDATE_MULTIPLIER = 3      # fetch top_k * 3 chunks, because several chunks collapse into one clause
 MAX_DIRECT_SOURCES = 2        # max sources coming from an explicit article number in the question
-MAX_PARTS_PER_SOURCE = 4      # a clause is split into ~1000-char parts; lower this if your LLM context is small
+# Max characters of one clause sent to the LLM / shown in the UI. Capped by size (not by number of
+# parts) so it keeps working if you change the chunk size. generation.py additionally limits the
+# TOTAL context to fit the 8k window of the LLM.
+MAX_SOURCE_CHARS = int(os.getenv("MAX_SOURCE_CHARS", "3500"))
 
 _QUERY_INCLUDE = ["documents", "metadatas", "distances"]
 _GET_INCLUDE = ["documents", "metadatas"]
@@ -163,8 +167,18 @@ def _lookup_by_article(collection, codes: List[str]) -> List[Dict[str, Any]]:
 _CONTEXT_LINE_RE = re.compile(r"^\[[^\]\n]*\]\n")  # "[C3: TECHNICAL REGULATIONS]\n" added by ingestion
 _PAGE_NUMBER_LINE_RE = re.compile(r"^\d{1,3}$")
 _BARE_CLAUSE_LINE_RE = re.compile(r"^[A-F]\d+(?:\.\d+)+$")
-# Start of a new paragraph: "C4.1.2 ...", "a) ...", "(2) ...", "• ..."
-_PARA_START_RE = re.compile(r"^(?:[A-F]\d+(?:\.\d+)+(?:\s|$)|\(?(?:[a-z]|\d{1,2})\)\s|[•▪●-]\s)")
+# Start of a new paragraph: "C4.1.2 ...", "a) ...", "(a) ...", "a. ...", "(2) ...", "• ..."
+_PARA_START_RE = re.compile(
+    r"^(?:"
+    r"[A-F]\d+(?:\.\d+)+(?:\s|$)"      # C4.1.2 ...
+    r"|\(?[a-z]\)\s"                    # a) ...   (a) ...
+    r"|[a-z]\.\s"                       # a. ...
+    r"|\(?\d{1,2}\)\s"                  # 1) ...   (2) ...
+    r"|[•▪●-]\s"                        # bullets
+    r")"
+)
+# The PDF often puts the list marker on its own line: "b." / "If the leader has completed ..."
+_BARE_MARKER_RE = re.compile(r"^(?:\(?[a-z]\)|[a-z]\.|[ivx]{2,4}\.|\(?\d{1,2}\))$")
 
 
 def _clean_part(text: str) -> str:
@@ -207,18 +221,35 @@ def _join_overlapping(pieces: List[str]) -> str:
     return merged
 
 
+def _is_table_row(line: str) -> bool:
+    """Table rows are written by ingestion as 'cell | cell | cell'."""
+    return " | " in line
+
+
 def _split_paragraphs(text: str) -> List[str]:
-    """Reflow hard-wrapped PDF lines into paragraphs (a new one starts at a clause number or list marker)."""
+    """
+    Reflow hard-wrapped PDF lines into paragraphs. A new paragraph starts at a clause number,
+    a list marker ("a.", "b)", "(2)", "•"), and every table row is its own paragraph.
+    """
     paragraphs: List[str] = []
     current: List[str] = []
+    prev_was_row = False
     for raw in text.split("\n"):
         line = raw.strip()
         if not line:
             continue
-        if current and _PARA_START_RE.match(line):
+        is_row = _is_table_row(line)
+        starts_new = (
+            is_row
+            or prev_was_row            # first line after a table
+            or _PARA_START_RE.match(line)
+            or _BARE_MARKER_RE.match(line)
+        )
+        if current and starts_new:
             paragraphs.append(" ".join(current))
             current = []
         current.append(line)
+        prev_was_row = is_row
     if current:
         paragraphs.append(" ".join(current))
     return paragraphs
@@ -345,17 +376,30 @@ def _build_source(rows: List[Dict[str, Any]], similarity: float, match: str) -> 
     if not kept:
         return None  # nothing but table-of-contents text
 
-    truncated = len(kept) > MAX_PARTS_PER_SOURCE
-    kept = kept[:MAX_PARTS_PER_SOURCE]
+    # Cap by size, not by number of parts (the part size depends on MAX_CHUNK_CHARS at ingestion).
+    # The first part is always kept.
+    capped, total = [], 0
+    for r, piece in kept:
+        if capped and total + len(piece) > MAX_SOURCE_CHARS:
+            break
+        capped.append((r, piece))
+        total += len(piece)
+    truncated = len(capped) < len(kept)
+    kept = capped
 
     text = _join_overlapping([piece for _, piece in kept])
     meta = dict(kept[0][0]["metadata"])
     article = str(meta.get("article") or "")
 
     # First line is the clause heading ("C4.1 Minimum mass"): the card title already shows it,
-    # so the displayed paragraphs start after it. `text` (for the LLM) keeps it.
+    # so the displayed paragraphs start after it. The LLM text keeps it.
     first_line, _, rest = text.partition("\n")
-    body = rest if (article and first_line.startswith(article) and rest.strip()) else text
+    has_heading = bool(article and first_line.startswith(article) and rest.strip())
+    body = rest if has_heading else text
+
+    paragraphs = _split_paragraphs(body)
+    # Reflowed text for the LLM: one paragraph / list item / table row per line
+    llm_text = "\n".join(([first_line] if has_heading else []) + paragraphs)
 
     return {
         "ref": 0,  # assigned after sorting / filtering
@@ -365,8 +409,8 @@ def _build_source(rows: List[Dict[str, Any]], similarity: float, match: str) -> 
         "page": meta.get("page"),
         "issue": meta.get("issue"),
         "date": meta.get("date"),
-        "text": text,
-        "paragraphs": _split_paragraphs(body),
+        "text": llm_text,
+        "paragraphs": paragraphs,
         "similarity": similarity,
         "match": match,
         "truncated": truncated,
