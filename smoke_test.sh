@@ -22,10 +22,10 @@ fi
 echo ""
 
 # Test 2: Easy Question
-echo "2️⃣  Testing easy question (DRS)..."
+echo "2️⃣  Testing easy question (F1 Championship)..."
 response=$(curl -s -X POST "$API_URL/query" \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is DRS?"}')
+  -d '{"question": "What are the two FIA Formula One World Championship titles awarded each season?"}')
 
 answer=$(echo $response | python3 -c "import sys, json; print(json.load(sys.stdin)['answer'][:50])" 2>/dev/null || echo "error")
 
@@ -76,7 +76,7 @@ echo ""
 echo "5️⃣  Testing response format..."
 response=$(curl -s -X POST "$API_URL/query" \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is DRS?"}')
+  -d '{"question": "What are the two FIA Formula One World Championship titles awarded each season?"}')
 
 has_answer=$(echo $response | python3 -c "import sys, json; print('answer' in json.load(sys.stdin))" 2>/dev/null || echo "False")
 has_sources=$(echo $response | python3 -c "import sys, json; print('sources' in json.load(sys.stdin))" 2>/dev/null || echo "False")
