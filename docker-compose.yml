@@ -23,11 +23,11 @@ services:
       - ./data/chroma:/data/chroma
       - ./.env:/app/.env
       - ./config.yaml:/app/config.yaml
+      - ./eval:/app/eval
     environment:
       - CHROMA_HOST=chroma
       - CHROMA_PORT=8000
     extra_hosts:
-      # Reach LM Studio on the host from Linux containers too (no-op on Docker Desktop)
       - "host.docker.internal:host-gateway"
     depends_on:
       chroma:
