@@ -110,9 +110,14 @@ if __name__ == "__main__":
     results = run_eval(questions)
     
     print_summary(results)
-    
+
     # Save results
     output_file = "eval/results.json"
+
+    if os.path.exists(output_file):
+        print(f"\nExisting {output_file} found. Replacing with new results...")
+
     with open(output_file, 'w') as f:
         json.dump(results, f, indent=2)
-    print(f"\nFull results saved to {output_file}")
+
+    print(f"Full results saved to {output_file}")
