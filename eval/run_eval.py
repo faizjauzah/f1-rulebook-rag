@@ -1,123 +1,106 @@
-import json
-import os
+"""CLI for the evaluation pipeline.
+
+Run from the API container (or through `./run.sh eval`):
+
+    python -m eval.run_eval collect [--run-id ID] [--force]
+    python -m eval.run_eval score   [--run-id ID]
+    python -m eval.run_eval report  [--run-id ID]
+    python -m eval.run_eval bless   [--run-id ID] [--compare-run-id ID]
+    python -m eval.run_eval print-model {generator|judge|embedding}
+"""
+
+from __future__ import annotations
+
+import argparse
 import sys
-import time
-from typing import List, Dict, Any
-import requests
+from typing import Optional
 
-API_URL = "http://localhost:8000"
-
-# A local model can take a while to answer a multi-source question, so the client
-# deadline is generous (and overridable) instead of tuned for a hosted API.
-EVAL_TIMEOUT_S = float(os.getenv("EVAL_TIMEOUT", "180"))
-
-
-def load_questions(filepath: str = "eval/questions.json") -> List[Dict[str, Any]]:
-    """Load evaluation questions from JSON file."""
-    with open(filepath, 'r') as f:
-        return json.load(f)
+from eval.collect import run_collect
+from eval.common import (
+    RUNS_DIR,
+    make_run_id,
+    resolve_run_id,
+    run_path,
+    validate_run_id,
+)
+from eval.report import run_bless, run_report
+from eval.score import run_score
 
 
-def run_eval(questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Run evaluation on all questions."""
-    results = []
-    
-    for q in questions:
-        print(f"\n{'='*80}")
-        print(f"Question {q['id']} ({q['category']}) - Section {q['section']}")
-        print(f"Q: {q['question']}")
-        print(f"{'='*80}")
-        
-        try:
-            start = time.time()
-            response = requests.post(
-                f"{API_URL}/query",
-                json={"question": q['question']},
-                timeout=EVAL_TIMEOUT_S
-            )
-            elapsed = time.time() - start
-            
-            if response.status_code == 200:
-                data = response.json()
-                print(f"\nAnswer: {data['answer'][:200]}...")
-                print(f"\nSources: {len(data['sources'])} chunks")
-                print(f"Response time: {elapsed:.2f}s")
-                
-                results.append({
-                    "question_id": q['id'],
-                    "question": q['question'],
-                    "category": q['category'],
-                    "status": "success",
-                    "answer": data['answer'],
-                    "sources_count": len(data['sources']),
-                    "response_time": elapsed,
-                    "metadata": data['metadata']
-                })
-            else:
-                print(f"\nError: {response.status_code} - {response.text}")
-                results.append({
-                    "question_id": q['id'],
-                    "question": q['question'],
-                    "category": q['category'],
-                    "status": "error",
-                    "error": response.text
-                })
-        
-        except Exception as e:
-            print(f"\nException: {e}")
-            results.append({
-                "question_id": q['id'],
-                "question": q['question'],
-                "category": q['category'],
-                "status": "exception",
-                "error": str(e)
-            })
-    
-    return results
+def latest_scored_run_id() -> Optional[str]:
+    if not RUNS_DIR.exists():
+        return None
+    candidates = sorted(
+        (p.name for p in RUNS_DIR.iterdir() if p.is_dir() and (p / "scores.json").exists()),
+        reverse=True,
+    )
+    return candidates[0] if candidates else None
 
 
-def print_summary(results: List[Dict[str, Any]]):
-    """Print evaluation summary."""
-    print(f"\n\n{'='*80}")
-    print("EVALUATION SUMMARY")
-    print(f"{'='*80}")
-    
-    total = len(results)
-    success = len([r for r in results if r['status'] == 'success'])
-    failed = total - success
-    
-    print(f"\nTotal questions: {total}")
-    print(f"Successful: {success}")
-    print(f"Failed: {failed}")
-    
-    if success > 0:
-        avg_time = sum(r['response_time'] for r in results if r['status'] == 'success') / success
-        print(f"Average response time: {avg_time:.2f}s")
-    
-    # By category
-    print("\nBy category:")
-    for category in ['easy', 'medium', 'hard']:
-        cat_results = [r for r in results if r.get('category') == category]
-        cat_success = len([r for r in cat_results if r['status'] == 'success'])
-        print(f"  {category.capitalize()}: {cat_success}/{len(cat_results)}")
+def require_scored_run(run_id: Optional[str]) -> str:
+    found = run_id or latest_scored_run_id()
+    if not found:
+        raise SystemExit("No scored run found. Run `./run.sh eval score` first.")
+    found = validate_run_id(found)
+    if not (run_path(found) / "scores.json").exists():
+        raise SystemExit(f"No scores.json in eval/runs/{found}.")
+    return found
+
+
+def main(argv: Optional[list] = None) -> int:
+    parser = argparse.ArgumentParser(prog="python -m eval.run_eval")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    collect = sub.add_parser("collect", help="Ask the API every question and save answers")
+    collect.add_argument("--run-id", default=None)
+    collect.add_argument("--force", action="store_true", help="Re-collect even if a run already has answers")
+
+    score = sub.add_parser("score", help="Score saved answers with RAGAS")
+    score.add_argument("--run-id", default=None)
+
+    report = sub.add_parser("report", help="Write summary.md for a scored run")
+    report.add_argument("--run-id", default=None)
+
+    bless = sub.add_parser("bless", help="Promote one or two runs to the baseline")
+    bless.add_argument("--run-id", default=None)
+    bless.add_argument("--compare-run-id", default=None)
+
+    print_model = sub.add_parser("print-model", help="Print a configured model name")
+    print_model.add_argument("role", choices=["generator", "judge", "embedding"])
+
+    args = parser.parse_args(argv)
+
+    if args.command == "print-model":
+        from app.config import config
+
+        model = {
+            "generator": config.llm_model,
+            "judge": config.evaluation_judge_model,
+            "embedding": config.evaluation_embedding_model,
+        }[args.role]
+        print(model)
+        return 0
+
+    if args.command == "collect":
+        run_id = args.run_id or make_run_id()
+        return run_collect(run_id, force=args.force)
+
+    if args.command == "score":
+        run_id = resolve_run_id(args.run_id)
+        return run_score(run_id)
+
+    if args.command == "report":
+        return run_report(require_scored_run(args.run_id))
+
+    if args.command == "bless":
+        return run_bless(
+            require_scored_run(args.run_id),
+            require_scored_run(args.compare_run_id) if args.compare_run_id else None,
+        )
+
+    parser.error(f"Unknown command: {args.command}")
+    return 2
 
 
 if __name__ == "__main__":
-    print("Loading questions...")
-    questions = load_questions()
-    
-    print(f"Running evaluation on {len(questions)} questions...\n")
-    results = run_eval(questions)
-    
-    print_summary(results)
-
-    # Save results
-    output_file = "eval/results.json"
-
-    if os.path.exists(output_file):
-        print(f"\nExisting {output_file} found. Replacing with new results...")
-
-    with open(output_file, 'w') as f:
-        json.dump(results, f, indent=2)
-
-    print(f"Full results saved to {output_file}")
+    sys.exit(main())

@@ -3,180 +3,297 @@
     "id": 1,
     "question": "What are the two FIA Formula One World Championship titles awarded each season?",
     "category": "easy",
-    "section": "A"
+    "section": "A",
+    "reference": "Two titles are awarded each season. The Drivers' Championship title is awarded to the F1 Driver who has scored the highest number of points, calculated in accordance with Article A2.2, taking into consideration all results obtained during the Competitions that have actually taken place. The Constructors' Championship title is awarded to the F1 Team that has scored the highest number of points on the same basis.",
+    "reference_clauses": ["A2.1.4"],
+    "verified": true
   },
   {
     "id": 2,
     "question": "How many points are awarded to the winner of a Race when at least 75% of the scheduled Race distance has been completed?",
     "category": "easy",
-    "section": "A"
+    "section": "A",
+    "reference": "25 points. If the leader has completed 75% or more of the Scheduled Race Distance, points are awarded in accordance with column 4 of the table in Article A2.2.1, which awards 25 points to the winner.",
+    "reference_clauses": ["A2.2.1"],
+    "verified": true
   },
   {
     "id": 3,
     "question": "When does a Competition officially commence according to the Sporting Regulations?",
     "category": "easy",
-    "section": "B"
+    "section": "B",
+    "reference": "A Competition commences four (4) hours before FP1 is scheduled to start. It ends at the later of the time for the lodging of a protest under the terms of the ISC or the time when a technical or sporting certification has been carried out under the terms of the ISC.",
+    "reference_clauses": ["B1.1.1"],
+    "verified": true
   },
   {
     "id": 4,
     "question": "What are the two permitted forms of Driver Adjustable Bodywork on a 2026 F1 car?",
     "category": "easy",
-    "section": "B"
+    "section": "B",
+    "reference": "The permitted Driver Adjustable Bodywork comprises the adjustment of the incidence of the Front Wing Profiles, controlled by the FIA Standard ECU as described in Article C3.10.10, and the adjustment of the incidence of the RW Flap, controlled by the FIA Standard ECU as described in Article C3.11.6.",
+    "reference_clauses": ["B7.1.1"],
+    "verified": true
   },
   {
     "id": 5,
     "question": "What is the minimum combined reference mass of the driver and Driver Ballast during a Competition?",
     "category": "easy",
-    "section": "C"
+    "section": "C",
+    "reference": "The reference Mass of the Driver plus the mass of any Driver Ballast must not be less than 82 kg at any time during the Competition.",
+    "reference_clauses": ["C4.5.2"],
+    "verified": true
   },
   {
     "id": 6,
     "question": "What is the maximum cumulative amount of energy that may be stored in the Power Unit, excluding the ERS?",
     "category": "easy",
-    "section": "C"
+    "section": "C",
+    "reference": "With the exception of the ERS, the cumulative amount of energy stored in the Power Unit should not be higher than 300 kJ. Additionally, no more than 20 kJ can be recovered per lap at a rate greater than 2 kW.",
+    "reference_clauses": ["C5.2.18"],
+    "verified": true
   },
   {
     "id": 7,
-    "question": "What is the main purpose of the Cost Cap under the F1 Team Financial Regulations?",
+    "question": "What does the Cost Cap under the F1 Team Financial Regulations limit, and what freedom does it leave an F1 Team?",
     "category": "easy",
-    "section": "D"
+    "section": "D",
+    "reference": "The Financial Regulations define a Cost Cap that limits certain costs that may be incurred by or on behalf of an F1 Team in each Full Year Financial Regulations Reporting Period relating to the operation of the F1 Team, including costs incurred to develop, manufacture, test and race F1 Cars in the Championship, while leaving the F1 Team free to decide how to allocate resources within that Cost Cap.",
+    "reference_clauses": ["D1.2.1"],
+    "verified": true
   },
   {
     "id": 8,
-    "question": "What is the name of the regulatory cost limit that applies specifically to Power Unit Manufacturers?",
+    "question": "What is the amount of the Power Unit Cost Cap that applies to a Power Unit Manufacturer from its Inaugural Season onwards?",
     "category": "easy",
-    "section": "E"
+    "section": "E",
+    "reference": "US Dollars 190,000,000, adjusted for Indexation, in the Full Year Financial Regulations Reporting Period ending on 31 December in the year of the Power Unit Manufacturer's Inaugural Season and in each subsequent Full Year Financial Regulations Reporting Period. (In each of its N-3, N-2 and N-1 Full Year Financial Regulations Reporting Periods the Power Unit Cost Cap is US Dollars 148,500,000, adjusted for Indexation.)",
+    "reference_clauses": ["E2.3.1"],
+    "verified": true
   },
   {
     "id": 9,
     "question": "How many consecutive calendar days must an F1 Team observe for its July/August factory shutdown period under the standard rule?",
     "category": "easy",
-    "section": "F"
+    "section": "F",
+    "reference": "Fourteen (14) consecutive calendar days during the months of July and/or August. If two consecutive Competitions during that period are separated by only seventeen (17) days, a shutdown period of thirteen (13) consecutive calendar days must be observed instead.",
+    "reference_clauses": ["F3.1.1"],
+    "verified": true
   },
   {
     "id": 10,
     "question": "What minimum level of FIA Environmental Accreditation must each Competitor hold?",
     "category": "easy",
-    "section": "F"
+    "section": "F",
+    "reference": "Each Competitor must hold the minimum of 3 Star FIA Environmental Accreditation.",
+    "reference_clauses": ["F2.1.1"],
+    "verified": true
   },
   {
     "id": 11,
     "question": "How does the Race points system change depending on the percentage of scheduled Race distance completed by the leader?",
     "category": "medium",
-    "section": "A"
+    "section": "A",
+    "reference": "Points are awarded according to the number of laps completed by the leader, and no points are awarded unless at least two complete and consecutive laps have been completed without a Safety Car or Virtual Safety Car procedure. If the leader has completed two laps but less than 25% of the Scheduled Race Distance, column 1 applies (6, 4, 3, 2, 1 for the top five). If 25% but less than 50% is completed, column 2 applies (13, 10, 8, 6, 5, 4, 3, 2, 1 for the top nine). If 50% but less than 75% is completed, column 3 applies (19, 14, 12, 10, 8, 6, 4, 3, 2, 1 for the top ten). If 75% or more is completed, column 4 applies (25, 18, 15, 12, 10, 8, 6, 4, 2, 1 for the top ten).",
+    "reference_clauses": ["A2.2.1"],
+    "verified": true
   },
   {
     "id": 12,
-    "question": "What responsibilities do F1 Teams and Power Unit Manufacturers have when they become aware of a possible breach of the FIA F1 Regulations?",
+    "question": "Under what conditions will the FIA consider a report from an F1 Team or Power Unit Manufacturer alleging that another F1 Team or Power Unit Manufacturer has breached the FIA F1 Regulations?",
     "category": "medium",
-    "section": "A"
+    "section": "A",
+    "reference": "The FIA may open an investigation if an F1 Team or PU Manufacturer (the Complainant) submits a report alleging that another F1 Team or PU Manufacturer has committed a breach or potential breach. For the report to be considered, it must be submitted in Good Faith and promptly after the Complainant becomes aware of the suspected non-compliance; identify the non-complying F1 Team or PU Manufacturer and clearly summarise the alleged non-compliance; clearly specify the relevant provisions that have not been complied with; include sufficient valid evidence or strong indications for each reported instance; be signed by the Chief Executive Officer or Team Principal of the Complainant as well as its director for the area of competence of the alleged breach; and be accompanied by a non-refundable administrative fee of €10,000 and a deposit of €40,000. The deposit is returned only if the complaint results in the FIA alleging a breach against an F1 Team or PU Manufacturer or if no investigation is opened. The Complainant must keep the report to the FIA confidential.",
+    "reference_clauses": ["A6.1.2"],
+    "verified": true
   },
   {
     "id": 13,
     "question": "Under what conditions may a driver fully or partially activate Driver Adjustable Bodywork, and what restriction applies in Low Grip Conditions?",
     "category": "medium",
-    "section": "B"
+    "section": "B",
+    "reference": "The driver may only activate the Driver Adjustable Bodywork, fully or partially, when they have been notified via the Control Electronics that it is enabled. In Low Grip Conditions only partial activation is allowed, and only in the associated Low Grip Activation Zones.",
+    "reference_clauses": ["B7.1.2"],
+    "verified": true
   },
   {
     "id": 14,
     "question": "When may intermediate and wet-weather tyres be used during a Free Practice session, and what must happen before they can be used?",
     "category": "medium",
-    "section": "B"
+    "section": "B",
+    "reference": "During any free practice session, intermediate and wet-weather tyres may only be used after the track has been declared wet by the Race Director. Following that declaration, intermediate, wet or dry-weather tyres may be used for the remainder of the session.",
+    "reference_clauses": ["B6.3.5"],
+    "verified": true
   },
   {
     "id": 15,
     "question": "What happens if a driver uses tyres of different specifications or tyres that were not allocated to them during a Total Time Classified Session?",
     "category": "medium",
-    "section": "B"
+    "section": "B",
+    "reference": "A driver who uses a set of tyres of differing specifications, or tyres not allocated to them, during a TTCS may not cross the Control Line on the track more than twice before returning to the pits and changing them for a set of tyres of the same specification. A Stop-and-Go Penalty will be imposed on any driver who does not change tyres as specified. For the avoidance of doubt, a set of tyres of differing specifications will not be considered when assessing the number of specifications used during the Race.",
+    "reference_clauses": ["B6.3.1"],
+    "verified": true
   },
   {
     "id": 16,
     "question": "What requirements apply to ballast used to meet the driver's minimum reference mass?",
     "category": "medium",
-    "section": "C"
+    "section": "C",
+    "reference": "Ballast designated for the purpose of achieving the driver mass specified in Article C4.5.2 must: be entirely located to the car between the front and rear extent of the cockpit entry template; be attached securely to the Survival Cell and sealed by the FIA; be clearly identified; have a density greater than 7500 kg/m3; and perform no additional function. A nominal such mass of 12 kg should be present for the impact test described in Article C13.2.",
+    "reference_clauses": ["C4.3.2", "C4.5.2"],
+    "verified": true
   },
   {
     "id": 17,
     "question": "How does the F1 Team Financial Regulations classify a Minor Overspend Breach compared with a Material Overspend Breach, and what are the required consequences of each?",
     "category": "medium",
-    "section": "D"
+    "section": "D",
+    "reference": "A Minor Overspend Breach arises where an F1 Team's Relevant Costs are reported or determined to exceed the Cost Cap by less than 2%. In that event the Cost Cap Adjudication Panel shall impose a Financial Penalty and any other appropriate Minor Sporting Penalties. A Material Overspend Breach arises where Relevant Costs are reported or determined to exceed the Cost Cap by 2% or more. In that event the Cost Cap Adjudication Panel shall impose a Constructors' Championship points deduction in accordance with Article D12.1.1.c.i and shall additionally impose a Financial Penalty and any other appropriate Material Sporting Penalties.",
+    "reference_clauses": ["D10.3.1", "D10.3.2", "D10.3.3", "D10.3.4"],
+    "verified": true
   },
   {
     "id": 18,
     "question": "What reporting and cooperation obligations must a Power Unit Manufacturer fulfil to demonstrate compliance with its Power Unit Cost Cap?",
     "category": "medium",
-    "section": "E"
+    "section": "E",
+    "reference": "A Power Unit Manufacturer must determine and report its Relevant Costs against the Power Unit Cost Cap in its Presentation Currency and must not have Relevant Costs in excess of the Power Unit Cost Cap in the applicable Full Year Financial Regulations Reporting Period. By the Full Year Reporting Deadline it must submit the Full Year Reporting Documentation to the Cost Cap Administration: the Reporting Group Documentation, the Full Year Financial Reporting Documentation, the Declarations, and an assessment report from the same Independent Audit Firm that signs its Audited Annual Financial Statements covering the completeness and accuracy of the documentation. By the Interim Reporting Deadline it must submit the Reporting Group Documentation, the Interim Financial Reporting Documentation and the Declarations. It must also provide any additional information, documentation or clarification relating to its compliance that the Cost Cap Administration may require.",
+    "reference_clauses": ["E2.2.1", "E5.1.1", "E5.2.1", "E6.3.3"],
+    "verified": true
   },
   {
     "id": 19,
     "question": "Which development and production activities are generally prohibited for an F1 Team during its factory shutdown period?",
     "category": "medium",
-    "section": "F"
+    "section": "F",
+    "reference": "During the shutdown periods no F1 Team or affiliate may carry out, or instruct a third-party supplier to carry out, any of the following: operation or use of any wind tunnel, except as specifically permitted by Article F3.1.4; operation or use of any computer resource for CFD Simulations, except as specifically permitted by Article F3.1.4; production or development of wind tunnel parts, car parts, test parts or tooling; sub-assembly of car parts or assembly of cars; and any work activity by an employee, consultant or sub-contractor engaged in design, development or production, excluding work to be undertaken at the circuit in preparation for the Competition immediately following the shutdown periods.",
+    "reference_clauses": ["F3.1.2"],
+    "verified": true
   },
   {
     "id": 20,
     "question": "What types of aerodynamic development activity are controlled by the Aerodynamic Testing Restrictions (ATR), and what are the two principal testing methods covered?",
     "category": "medium",
-    "section": "F"
+    "section": "F",
+    "reference": "The ATR controls Restricted Aerodynamic testing, meaning testing by an F1 Team, any Associate or contracted party, or an external entity working on behalf of a team or providing results to it, in a test environment or numerical simulation of a representation of an F1 car or sub-component in order to measure, observe or infer any forces, displacements, pressures or air flow direction resulting directly or indirectly from the incident air flow. The two principal methods covered are Restricted Wind Tunnel Testing (RWTT) and Restricted CFD (RCFD) simulations.",
+    "reference_clauses": ["F4.1.2", "F4.2", "F4.4"],
+    "verified": true
   },
   {
     "id": 21,
     "question": "A Race is stopped after the leader has completed 40% of the scheduled distance. Explain which Race points column applies and identify the points awarded to the top three classified drivers.",
     "category": "hard",
-    "section": "A"
+    "section": "A",
+    "reference": "40% is 25% or more but less than 50% of the Scheduled Race Distance, so column 2 of the table in Article A2.2.1 applies. Under column 2 the top three classified drivers score 13 points for first, 10 points for second and 8 points for third.",
+    "reference_clauses": ["A2.2.1"],
+    "verified": true
   },
   {
     "id": 22,
     "question": "A driver activates both front-wing and rear-wing adjustment in a designated Low Grip Activation Zone. Explain whether full or partial Driver Adjustable Bodywork activation is permitted, how the two wing positions define that state, and what electronic notification the driver must receive before activation.",
     "category": "hard",
-    "section": "B,C"
+    "section": "B,C",
+    "reference": "Full activation is not permitted in Low Grip Conditions; only partial activation is allowed, and only in the associated Low Grip Activation Zones. The Driver Adjustable Bodywork is fully activated when, following a command from the driver, both the Front Wing Profiles and the RW Flap are in their respective Straight Mode positions. It is partially activated when, following a command from the driver, the Front Wing Profiles are in their Straight Mode position and the RW Flap is in its Corner Mode position. Before activating it, fully or partially, the driver must have been notified via the Control Electronics that it is enabled.",
+    "reference_clauses": ["B7.1.1", "B7.1.2"],
+    "verified": true
   },
   {
     "id": 23,
     "question": "During a Race, the Safety Car is deployed while a driver is eligible to use Overtake. Explain how the Overtake system is disabled and the condition under which it becomes available again after the Safety Car returns to the Pit Lane.",
     "category": "hard",
-    "section": "B"
+    "section": "B",
+    "reference": "When the Safety Car is deployed, Overtake is disabled. It is enabled again after all F1 Cars have crossed the Control Line after the Safety Car has entered the Pit Entry Road to return to the Pit Lane.",
+    "reference_clauses": ["B7.2.2"],
+    "verified": true
   },
   {
     "id": 24,
-    "question": "A Competition has a declared Rain Hazard and the car is under parc fermé conditions. Explain how the Rain Hazard affects the work that may be carried out on the car, and distinguish this from the tyre-use rule that applies when a Free Practice session is declared wet.",
-    "category": "hard",
-    "section": "B"
+    "question": "Under what circumstances may a Rain Hazard be declared, how long does it remain in force for the Race, and how does it affect the work that may be carried out on a car in parc fermé?",
+    "category": "medium",
+    "section": "B",
+    "reference": "A Rain Hazard may be declared if the Official Weather Service predicts that the probability of precipitation is greater than 40% at some point during the Sprint or the Race, or at the sole discretion of the Race Director. For the Race, a Rain Hazard is declared no later than two hours before the start of Qualifying and remains in force from the time of declaration until the end-of-session signal for the Race is given. When an F1 Car is deemed to be in parc fermé whilst a Rain Hazard is in force, other than when the F1 Cars are sealed in accordance with Article B3.4.2 or B3.4.3, the work described in FIA-F1-DOC-080 may be carried out.",
+    "reference_clauses": ["B1.5.11"],
+    "verified": true
   },
   {
     "id": 25,
-    "question": "A team replaces a component during a Race and also carries ballast intended to satisfy the driver's minimum mass requirement. Explain the restrictions on adding substances or replacing parts during the Race, and the location, security and mass requirements for Driver Ballast.",
-    "category": "hard",
-    "section": "C"
+    "question": "What restrictions apply to adding substances or replacing parts on the car during the Race or Sprint Session, and what location, security, identification, density and function requirements apply to Driver Ballast?",
+    "category": "medium",
+    "section": "C",
+    "reference": "With the exception of compressed gases, no substance may be added to the car during the Race or Sprint Session. If it becomes necessary to replace any part of the car during the Race or Sprint Session, the mass of the new part must not be more than that of the original part. Ballast designated for the purpose of achieving the driver mass specified in Article C4.5.2 must: be entirely located to the car between the front and rear extent of the cockpit entry template; be attached securely to the Survival Cell and sealed by the FIA; be clearly identified; have a density greater than 7500 kg/m3; and perform no additional function.",
+    "reference_clauses": ["C4.4", "C4.3.2"],
+    "verified": true
   },
   {
     "id": 26,
     "question": "An F1 Team's Relevant Costs are determined to exceed its Cost Cap by 2.3%. Classify the breach and explain the sporting and financial sanctions that the Cost Cap Adjudication Panel must impose or may additionally impose.",
     "category": "hard",
-    "section": "D"
+    "section": "D",
+    "reference": "An excess of 2.3% is 2% or more, so it is a Material Overspend Breach. The Cost Cap Adjudication Panel shall impose a Constructors' Championship points deduction in accordance with Article D12.1.1.c.i and shall additionally impose a Financial Penalty and any other appropriate Material Sporting Penalties. Material Sporting Penalties may include deduction of Constructors' Championship points, deduction of Drivers' Championship points, suspension from one or more stages of a Competition excluding the race or Sprint, limitations on the ability to conduct aerodynamic or other Testing, suspension from an entire Competition or Competitions including the race or Sprint, exclusion from the Championship for a specified period, and/or reduction of the Cost Cap.",
+    "reference_clauses": ["D10.3.3", "D10.3.4", "D12.1.1"],
+    "verified": true
   },
   {
     "id": 27,
     "question": "An organisation both operates as an F1 Team and is part of a Power Unit Manufacturer's wider legal group. Explain why compliance with the F1 Team Cost Cap and the Power Unit Cost Cap must be assessed separately, and identify the distinct entities each set of regulations covers.",
     "category": "hard",
-    "section": "D,E"
+    "section": "D,E",
+    "reference": "The two sets of regulations are distinct from and independent of each other, and operate and are applied accordingly. Where an F1 Team is also a Power Unit Manufacturer, it must comply separately with both sets of regulations, including both sets of reporting requirements and demonstrating compliance with both Cost Caps. The F1 Team Cost Cap in Section D limits certain costs incurred by or on behalf of an F1 Team in each Full Year Financial Regulations Reporting Period relating to the operation of the F1 Team, including costs to develop, manufacture, test and race F1 Cars, and each F1 Team and each Individual F1 Team Member agrees to be bound by those regulations by participating in the Championship. The Power Unit Cost Cap in Section E limits certain costs incurred by or on behalf of a Power Unit Manufacturer or any other entity within its Legal Group, and binds each Power Unit Manufacturer intending to homologate Power Units for supply to F1 Teams for the Championship from 2026 onwards.",
+    "reference_clauses": ["D1.6.1", "D1.1.1", "D1.2.1", "E1.1.1", "E1.2.1"],
+    "verified": true
   },
   {
     "id": 28,
     "question": "A Power Unit Manufacturer wants to continue operating a test bench during its factory shutdown for maintenance, while also conducting a test related to Formula One development. Explain which activity may qualify for a shutdown exception and which restriction still applies.",
     "category": "hard",
-    "section": "F"
+    "section": "F",
+    "reference": "During a PU Manufacturer shutdown, operation or use of any test bench is prohibited except as specifically permitted by Article F3.2.6, and no occupancy hours or operation hours may be incremented, nor unrestricted test bench hours for projects connected to Formula One (F3.2.5.b). The F3.2.6 exception covers work on any test bench or computer resource for the purposes of maintenance or modifications to the facility, so the maintenance activity may qualify. That exception expressly excludes any activity defined as Restricted Power Unit Testing in Article F5, and no exception covers test bench use for projects connected to Formula One, so a test related to Formula One development remains prohibited during the shutdown.",
+    "reference_clauses": ["F3.2.5", "F3.2.6", "F5"],
+    "verified": true
   },
   {
     "id": 29,
     "question": "A team proposes using its wind tunnel and CFD resources during its factory shutdown, claiming the work is for maintenance and software upgrades. Explain the relevant shutdown exceptions and how the separate Aerodynamic Testing Restrictions may still limit the proposed work.",
     "category": "hard",
-    "section": "F"
+    "section": "F",
+    "reference": "During a shutdown, operation and use of a wind tunnel is not a breach where it is for projects with no direct relation to Formula One, or on behalf of an F1 Team not at that time within its own shutdown period, or for the purposes of maintenance or modifications to the facility, excluding any activity defined as Restricted Wind Tunnel Testing in Appendix 7 of the Sporting Regulations. Operation and use of a computer for CFD simulations is permitted for projects with no direct relation to Formula One, for an F1 Team not in its own shutdown period, or for system or software upgrade or maintenance, but not for activities that may be deemed methodological development or are defined as Restricted CFD Simulations in Article F4. The ATR separately limits RWTT and RCFD, so work that qualifies as a shutdown exception can still be restricted by the ATR.",
+    "reference_clauses": ["F3.1.4", "F4"],
+    "verified": true
   },
   {
     "id": 30,
-    "question": "A Power Unit Manufacturer commits a Material Overspend Breach and receives a financial penalty. Explain the possible categories of sporting or regulatory sanctions, the deadline for paying the fine, and the consequence of failing to pay by the due date.",
+    "question": "A Power Unit Manufacturer is found to have committed a Material Overspend Breach. Explain when this breach arises, which sanction the Cost Cap Adjudication Panel must impose and what it may additionally impose, the deadline for paying any fine, and the consequence of failing to pay by the due date.",
     "category": "hard",
-    "section": "E"
+    "section": "E",
+    "reference": "A Material Overspend Breach arises when the Power Unit Manufacturer's Relevant Costs, as reported or as determined after review, exceed the Power Unit Cost Cap by 5% or more. The Cost Cap Adjudication Panel shall impose a Constructors' Championship points deduction in accordance with Article E9.1.1.c.i and additionally may impose a Financial Penalty (a fine determined case by case) and/or any other Material Sporting Penalties. Material Sporting Penalties are one or more of: deduction of Drivers' and/or Constructors' Championship points awarded to the Nominated Team; deduction of such points awarded to the Nominated Team and all Customer Teams; limitations on Power Unit Test Bench testing or other Testing for Power Units to be homologated for supply from 2026 onwards; limitations on future upgrades to the currently homologated Power Unit; divesting of the right to homologate Power Units for Championship seasons from 2026 onwards; and/or reduction of the Power Unit Cost Cap. Payment of all fines must be made within 30 days of the date of the relevant decision, and if an appeal is made payment is suspended until the outcome is determined. Any delay in payment automatically divests the Power Unit Manufacturer of the right for its Power Units to be homologated for supply to F1 Teams in Championship seasons from 2026 onwards that commence after the due date, until payment is made, and interest accrues daily on the outstanding principal at 2% above the US Federal Reserve System federal funds rate on the relevant due date.",
+    "reference_clauses": ["E8.4.1", "E8.4.2", "E9.1.1", "E9.3.1", "E9.3.2", "E9.3.3"],
+    "verified": true
+  },
+  {
+    "id": 31,
+    "question": "What will the weather be like at the next Formula One Grand Prix?",
+    "category": "negative",
+    "section": "none",
+    "reference": null,
+    "reference_clauses": [],
+    "verified": true
+  },
+  {
+    "id": 32,
+    "question": "Who won the 2025 Formula One World Drivers' Championship?",
+    "category": "negative",
+    "section": "none",
+    "reference": null,
+    "reference_clauses": [],
+    "verified": true
+  },
+  {
+    "id": 33,
+    "question": "What is the maximum budget allowed for a Formula 2 team in a season?",
+    "category": "negative",
+    "section": "none",
+    "reference": null,
+    "reference_clauses": [],
+    "verified": true
   }
 ]

@@ -61,6 +61,16 @@ class Config:
         self.llm_model = raw["llm"]["model"]
         self.llm_temperature = float(raw["llm"]["temperature"])
 
+        # Evaluation. The judge shares the LLM server; only the model differs.
+        evaluation = raw.get("evaluation") or {}
+        self.evaluation_judge_model = evaluation.get("judge_model") or "qwen/qwen3.5-9b"
+        self.evaluation_judge_temperature = float(evaluation.get("judge_temperature", 0.0))
+        self.evaluation_embedding_model = evaluation.get("embedding_model") or self.embedding_model
+        self.evaluation_timeout_s = int(evaluation.get("timeout_s", 300))
+        self.evaluation_max_workers = int(evaluation.get("max_workers", 1))
+        if not self.evaluation_judge_model:
+            raise ValueError("evaluation.judge_model must not be empty")
+
         # Collection name
         self.collection_name = raw["collection"]
 
