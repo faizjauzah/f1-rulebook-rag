@@ -25,14 +25,14 @@ Everything runs on your machine. Embeddings and answers come from an OpenAI-comp
 ## ✨ Highlights
 
 - **Fully local inference.** Local embeddings + local chat model, vendored UI assets, Chroma telemetry disabled.
-- **Measured with RAGAS.** Answers are scored for faithfulness (0.88), context recall (0.91) and answer correctness (0.78) — see [Results at a glance](#-results-at-a-glance).
+- **Measured with RAGAS.** Answers are scored for faithfulness (0.88), context recall (0.91) and answer correctness (0.78).
 - **Clause-aware, not chunk-blind.** Ingestion splits the rulebook by article and clause (`C5.2.4`), merges parts back before display, and never cites half a clause.
 - **Answers are grounded.** The model is asked to cite each claim as `[1]`, `[2]`… and the paragraph it relied on is highlighted in the source card.
 - **Direct lookup.** Ask about `C3.5.2` or `Article C5` and those clauses are fetched even if similarity ranking would have missed them.
 
 Two containers (API + ChromaDB), one REST API, one small web UI, and OpenAPI docs at `/docs`.
 
-## 📈 Results at a glance
+## 📈 Results
 
 Measured on the committed baseline (30 verified questions; `google/gemma-4-e4b` generator, `qwen/qwen3.5-9b` judge):
 
