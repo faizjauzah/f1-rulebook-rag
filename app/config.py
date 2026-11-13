@@ -77,6 +77,7 @@ class Config:
         # Shared config
         self.top_k = int(os.getenv("TOP_K", raw["top_k"]))
         self.similarity_threshold = float(os.getenv("SIMILARITY_THRESHOLD", raw["similarity_threshold"]))
+        self.refusal_threshold = float(os.getenv("REFUSAL_THRESHOLD", raw.get("refusal_threshold", 0.7)))
         self.pdf_directory = os.getenv("PDF_DIRECTORY", raw["pdf_directory"])
 
         # Local servers ignore the key, but the OpenAI client requires one. Any

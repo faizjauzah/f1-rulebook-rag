@@ -9,30 +9,42 @@
 [![ChromaDB](https://img.shields.io/badge/ChromaDB-1.5.9-FF6B35?style=flat-square)](https://www.trychroma.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white&style=flat-square)](https://docs.docker.com/compose/)
 [![Local only](https://img.shields.io/badge/inference-100%25%20local-E10600?style=flat-square)](docs/adr/0001-local-only-inference.md)
+[![Evaluated with RAGAS](https://img.shields.io/badge/evaluated-RAGAS-6366F1?style=flat-square)](docs/EVALUATION.md)
 [![License](https://img.shields.io/badge/license-MIT-3DA639?style=flat-square)](LICENSE)
 
 [Quick start](#-quick-start) · [How it works](#-how-it-works) · [API](#-api) · [Evaluation](#-evaluation) · [Docs](#-documentation)
 
-<img src="docs/images/ui-answer.png" alt="An answer citing Article C5.2.4, with the fuel energy flow limits quoted from the 2026 Technical Regulations" width="100%">
+<img src="docs/images/ui-home.png" alt="The web UI with example questions and a ChromaDB connection indicator" width="100%">
 
 </div>
 
 A retrieval-augmented generation system over the six **2026 FIA Formula 1 Regulations** PDFs. It finds the clauses that actually bear on a question, answers in plain English, and shows the exact passage it relied on — page, issue and all.
 
-Everything runs on your machine. Embeddings and answers come from an OpenAI-compatible server (LM Studio by default); the UI assets are vendored. There are no API keys and no cloud calls in the app.
-
-> The badges above are fetched by GitHub when it renders this page. The application itself makes exactly one network hop: container → your local model server.
+Everything runs on your machine. Embeddings and answers come from an OpenAI-compatible server (LM Studio by default).
 
 ## ✨ Highlights
 
 - **Fully local inference.** Local embeddings + local chat model, vendored UI assets, Chroma telemetry disabled.
+- **Measured with RAGAS.** Answers are scored for faithfulness (0.88), context recall (0.91) and answer correctness (0.78) — see [Results at a glance](#-results-at-a-glance).
 - **Clause-aware, not chunk-blind.** Ingestion splits the rulebook by article and clause (`C5.2.4`), merges parts back before display, and never cites half a clause.
 - **Answers are grounded.** The model is asked to cite each claim as `[1]`, `[2]`… and the paragraph it relied on is highlighted in the source card.
 - **Direct lookup.** Ask about `C3.5.2` or `Article C5` and those clauses are fetched even if similarity ranking would have missed them.
-- **It refuses to phone home.** A non-local `base_url` is a startup error, not a silent fallback to `api.openai.com`.
-- **It can say "I don't know".** If nothing clears the similarity threshold, you get a clear "no relevant regulations" answer with zero sources — not a hallucination.
 
 Two containers (API + ChromaDB), one REST API, one small web UI, and OpenAPI docs at `/docs`.
+
+## 📈 Results at a glance
+
+Measured on the committed baseline (30 verified questions; `google/gemma-4-e4b` generator, `qwen/qwen3.5-9b` judge):
+
+| Metric             | Mean  |
+| ------------------ | ----- |
+| Faithfulness       | 0.882 |
+| Context recall     | 0.906 |
+| Context precision  | 0.867 |
+| Answer correctness | 0.775 |
+| Clause recall      | 0.819 |
+
+Full breakdown, caveats, and known limitations: [`docs/EVALUATION.md`](docs/EVALUATION.md).
 
 ## 🏗 How it works
 
@@ -81,6 +93,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full diagram and [`do
 
 - **Embedding model:** `text-embedding-bge-large-en-v1.5`
 - **Chat model:** `google/gemma-4-e4b`
+- **Judge model:** `qwen/qwen3.5-9b`
 
 Start the server on port **1234** (Developer tab → Start Server). The names must match `config.yaml`; edit that file if yours differ.
 
@@ -114,20 +127,20 @@ No API key step. `.env` can stay empty.
 
 ### Helper commands
 
-| Command | What it does |
-|---|---|
-| `./run.sh start` | Build and start API + ChromaDB (foreground) |
-| `./run.sh stop` | Stop the containers |
-| `./run.sh ingest` | Re-ingest every PDF (recreates the collection) |
-| `./run.sh query "…"` | POST a question and pretty-print the JSON |
-| `./run.sh health` | Print `/health` |
-| `./run.sh eval` | Run the 30-question eval inside the API container |
-| `./run.sh logs` | Follow API logs |
-| `./run.sh clean` | Remove containers and `data/` |
+| Command              | What it does                                      |
+| -------------------- | ------------------------------------------------- |
+| `./run.sh start`     | Build and start API + ChromaDB (foreground)       |
+| `./run.sh stop`      | Stop the containers                               |
+| `./run.sh ingest`    | Re-ingest every PDF (recreates the collection)    |
+| `./run.sh query "…"` | POST a question and pretty-print the JSON         |
+| `./run.sh health`    | Print `/health`                                   |
+| `./run.sh eval`      | Run the 30-question eval inside the API container |
+| `./run.sh logs`      | Follow API logs                                   |
+| `./run.sh clean`     | Remove containers and `data/`                     |
 
 ## 💡 Usage
 
-<img src="docs/images/ui-home.png" alt="The web UI with example questions and a ChromaDB connection indicator" width="100%">
+<img src="docs/images/ui-answer.png" alt="An answer citing Article C5.2.4, with the fuel energy flow limits quoted from the 2026 Technical Regulations" width="100%">
 
 Type a question, press <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>Enter</kbd>, and read the answer. Citation links jump to the source cards; the paragraph(s) the answer relies on are highlighted.
 
@@ -137,8 +150,6 @@ Example questions:
 - "What is the minimum weight of the car?"
 - "How are cost cap penalties determined?"
 - "What happens if it rains during qualifying?"
-
-The 2026 regulations replace DRS with active aerodynamics, so *"What is DRS?"* correctly returns **no relevant regulations** rather than an invented answer.
 
 ### Answers you can check
 
@@ -166,6 +177,7 @@ collection: "f1-regs"
 
 top_k: 5
 similarity_threshold: 0.6
+refusal_threshold: 0.7
 pdf_directory: "PDFs"
 ```
 
@@ -175,33 +187,34 @@ Use LM Studio on a non-default port, or a different server entirely (Ollama, lla
 
 ### Environment variables (all optional)
 
-| Var | Default | Effect |
-|---|---|---|
-| `LOCAL_API_KEY` | `lm-studio` | Key sent to the local server (only needed if it has auth enabled) |
-| `TOP_K` | `5` | Sources returned per query |
-| `SIMILARITY_THRESHOLD` | `0.6` | Min similarity to keep a source |
-| `PDF_DIRECTORY` | `PDFs` | PDF input directory |
-| `MAX_CHUNK_CHARS` | `800` | Max chars per chunk part |
-| `CHUNK_OVERLAP_CHARS` | `120` | Overlap between split parts |
-| `MIN_CHUNK_CHARS` | `200` | Shorter sections merge into the next section of the same article |
-| `LOCAL_EMBED_BATCH` | `16` | Embedding batch size |
-| `EMBED_QUERY_PREFIX` | bge instruction¹ | Prefix for query embeddings (model-card dependent) |
-| `EMBED_DOC_PREFIX` | *(empty)* | Prefix for document embeddings |
-| `CHROMA_HOST` / `CHROMA_PORT` | `localhost` / `8001` | ChromaDB address (Compose sets `chroma:8000`) |
-| `EVAL_TIMEOUT` | `180` | Per-question client deadline for `./run.sh eval` (seconds) |
+| Var                           | Default              | Effect                                                            |
+| ----------------------------- | -------------------- | ----------------------------------------------------------------- |
+| `LOCAL_API_KEY`               | `lm-studio`          | Key sent to the local server (only needed if it has auth enabled) |
+| `TOP_K`                       | `5`                  | Sources returned per query                                        |
+| `SIMILARITY_THRESHOLD`        | `0.6`                | Min similarity to keep a source                                   |
+| `REFUSAL_THRESHOLD`           | `0.7`                | Refuse (no sources) when best similarity is below this            |
+| `PDF_DIRECTORY`               | `PDFs`               | PDF input directory                                               |
+| `MAX_CHUNK_CHARS`             | `800`                | Max chars per chunk part                                          |
+| `CHUNK_OVERLAP_CHARS`         | `120`                | Overlap between split parts                                       |
+| `MIN_CHUNK_CHARS`             | `200`                | Shorter sections merge into the next section of the same article  |
+| `LOCAL_EMBED_BATCH`           | `16`                 | Embedding batch size                                              |
+| `EMBED_QUERY_PREFIX`          | bge instruction¹     | Prefix for query embeddings (model-card dependent)                |
+| `EMBED_DOC_PREFIX`            | _(empty)_            | Prefix for document embeddings                                    |
+| `CHROMA_HOST` / `CHROMA_PORT` | `localhost` / `8001` | ChromaDB address (Compose sets `chroma:8000`)                     |
+| `EVAL_TIMEOUT`                | `180`                | Per-question client deadline for `./run.sh eval` (seconds)        |
 
 ¹ Defaults to `"Represent this sentence for searching relevant passages: "`. If you set the variable — even to an empty string — your value wins. See the model-card notes in `app/services/embeddings.py`.
 
 <details>
 <summary><strong>Advanced tunables</strong></summary>
 
-| Var | Default | Effect |
-|---|---|---|
-| `MAX_CHUNK_TOKENS` | `400` | Estimated token cap per embedded chunk (bge-large's window is 512) |
-| `MAX_EMBED_CHARS` | `1000` | Safety clip so one oversized text can't fail a whole embedding batch |
-| `MAX_SOURCE_CHARS` | `3500` | Max chars of one clause sent to the LLM / shown in the UI |
+| Var                     | Default | Effect                                                                 |
+| ----------------------- | ------- | ---------------------------------------------------------------------- |
+| `MAX_CHUNK_TOKENS`      | `400`   | Estimated token cap per embedded chunk (bge-large's window is 512)     |
+| `MAX_EMBED_CHARS`       | `1000`  | Safety clip so one oversized text can't fail a whole embedding batch   |
+| `MAX_SOURCE_CHARS`      | `3500`  | Max chars of one clause sent to the LLM / shown in the UI              |
 | `LLM_MAX_CONTEXT_CHARS` | `12000` | Total excerpt text sent to the LLM (keeps an 8k-token model in budget) |
-| `LLM_MAX_TOKENS` | `1500` | Answer budget |
+| `LLM_MAX_TOKENS`        | `1500`  | Answer budget                                                          |
 
 </details>
 
@@ -215,6 +228,33 @@ Use LM Studio on a non-default port, or a different server entirely (Ollama, lla
 ```
 
 33 questions in [`eval/questions.json`](eval/questions.json): 30 verified positives (with human-written `reference` answers and `reference_clauses`) plus 3 out-of-scope negatives. The suite is RAGAS-based (`Faithfulness`, `LLMContextRecall`, `LLMContextPrecisionWithReference`, `AnswerCorrectness`) on top of deterministic checks (`clause_recall`, citations, latency, source counts). One RAGAS context = one retrieved Source (whole clause). Only `verified: true` positives enter the RAGAS aggregates; negatives are scored separately.
+
+**Committed baseline results** — blessed run `20261113T120346Z-f299518` (compared with `20261113T134349Z-f299518`); full breakdown in [`docs/EVALUATION.md`](docs/EVALUATION.md).
+
+| Metric             | Mean  | Run-to-run noise |
+| ------------------ | ----- | ---------------- |
+| Faithfulness       | 0.882 | ±0.041           |
+| Context recall     | 0.906 | 0.000            |
+| Context precision  | 0.867 | 0.000            |
+| Answer correctness | 0.775 | ±0.012           |
+
+| Check                            | Value |
+| -------------------------------- | ----- |
+| Clause recall                    | 0.819 |
+| Answers with a citation          | 0.267 |
+| Citations that resolve           | 1.000 |
+| Cited sources / returned sources | 0.288 |
+| Sources per answer               | 4.97  |
+| Latency mean (s)                 | 77.1  |
+| Latency median (s)               | 81.7  |
+
+These numbers come from the tracked [`eval/baseline.json`](eval/baseline.json): the RAGAS figures are the **mean across the two blessed runs** (0.903 faithfulness for this run alone; see [`docs/EVALUATION.md`](docs/EVALUATION.md)). They describe **this machine, this generator (`google/gemma-4-e4b`), this judge (`qwen/qwen3.5-9b`) and this embedding model (`text-embedding-bge-large-en-v1.5`)**. They are not comparable across models, quantization levels or hardware.
+
+**Known limitations surfaced by the eval** (see [`docs/EVALUATION.md`](docs/EVALUATION.md)):
+
+- Out-of-scope questions were **not refused** in this run (3/3 returned sources). A `REFUSAL_THRESHOLD=0.7` guard has since been added; the next run will confirm it.
+- Citation usage is inconsistent (0.27–0.50 of answers cite a source); answer correctness is weakest on hard, multi-clause questions (~0.66).
+- Local generation is slow (~77 s mean per question on this hardware).
 
 The judge (`qwen/qwen3.5-9b` by default) must differ from the generator; `./run.sh eval` swaps them via the `lms` CLI (16 GB RAM holds one chat model at a time). Results land in `eval/runs/<run-id>/` (`samples.jsonl`, `scores.json`, `scores.csv`, `summary.md`). `eval/runs/` is gitignored except the committed baseline.
 
@@ -230,14 +270,14 @@ Five HTTP checks covering `/health`, easy/medium query shapes, response format, 
 
 ## 📚 API
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/` | Web UI (`app/static/index.html`) |
-| `GET` | `/health` | ChromaDB connectivity + configured models |
-| `POST` | `/query` | Ask a question |
-| `POST` | `/ingest` | Re-ingest the PDFs (synchronous) |
-| `GET` | `/docs`, `/redoc`, `/openapi.json` | OpenAPI documentation |
-| `GET` | `/static/*` | Vendored UI assets |
+| Method | Path                               | Purpose                                   |
+| ------ | ---------------------------------- | ----------------------------------------- |
+| `GET`  | `/`                                | Web UI (`app/static/index.html`)          |
+| `GET`  | `/health`                          | ChromaDB connectivity + configured models |
+| `POST` | `/query`                           | Ask a question                            |
+| `POST` | `/ingest`                          | Re-ingest the PDFs (synchronous)          |
+| `GET`  | `/docs`, `/redoc`, `/openapi.json` | OpenAPI documentation                     |
+| `GET`  | `/static/*`                        | Vendored UI assets                        |
 
 ### `POST /query`
 
@@ -343,12 +383,18 @@ If no chunks are extracted it returns HTTP 200 with `"status": "error"` and `"ch
 │       ├── index.html          # Web UI
 │       └── vendor/             # marked + DOMPurify (no CDN)
 ├── eval/
+│   ├── common.py               # hared paths, I/O, question filtering, config snapshot, metric helpers
+│   ├── collect.py              # Phase 1: query the API and save answers/sources/latency
+│   ├── score.py                # Phase 2: RAGAS + deterministic checks; writes scores
+│   ├── report.py               # builds summary.md; bless writes baseline.json
+│   ├── run_eval.py             # CLI entry point for all eval stages
 │   ├── questions.json          # 33 questions (30 verified + 3 negatives)
-│   ├── common.py / collect.py / score.py / report.py / run_eval.py
+│   ├── baseline.json           # committed baseline (tracked)
 │   └── runs/<run-id>/          # samples, scores, summary (gitignored)
 ├── docs/
 │   ├── ARCHITECTURE.md
-│   ├── adr/0001-local-only-inference.md
+│   ├── EVALUATION.md
+│   ├── adr/                    # Architecture Decision Records
 │   ├── agents/                 # issue tracker, triage labels, domain docs
 │   └── images/                 # README screenshots
 ├── PDFs/                       # six 2026 FIA regulation PDFs
@@ -371,14 +417,14 @@ If no chunks are extracted it returns HTTP 200 with `"status": "error"` and `"ch
 
 ## 🛠 Technology stack
 
-| Layer | Choice |
-|---|---|
-| API | FastAPI 0.143 + Pydantic 2.12, Uvicorn |
-| Vector store | ChromaDB 1.5.9 (cosine, persisted to `./data/chroma`) |
-| PDF parsing | pymupdf 1.24.10 |
-| Inference | OpenAI Python SDK 1.55 against a local OpenAI-compatible server |
-| UI | Vanilla HTML/CSS/JS; marked 12 + DOMPurify 3.1.6 vendored |
-| Runtime | Python 3.11, Docker Compose (API + ChromaDB) |
+| Layer        | Choice                                                          |
+| ------------ | --------------------------------------------------------------- |
+| API          | FastAPI 0.143 + Pydantic 2.12, Uvicorn                          |
+| Vector store | ChromaDB 1.5.9 (cosine, persisted to `./data/chroma`)           |
+| PDF parsing  | pymupdf 1.24.10                                                 |
+| Inference    | OpenAI Python SDK 1.55 against a local OpenAI-compatible server |
+| UI           | Vanilla HTML/CSS/JS; marked 12 + DOMPurify 3.1.6 vendored       |
+| Runtime      | Python 3.11, Docker Compose (API + ChromaDB)                    |
 
 ## 🗺 Roadmap
 
@@ -391,14 +437,14 @@ If no chunks are extracted it returns HTTP 200 with `"status": "error"` and `"ch
 
 ## 📖 Documentation
 
-| Doc | What's inside |
-|---|---|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Component diagram, request flows, storage layout |
-| [`GLOSSARY.md`](GLOSSARY.md) | Section / article / clause / source / ref / highlight |
-| [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Common local-inference and Docker problems |
-| [`docs/adr/0001-local-only-inference.md`](docs/adr/0001-local-only-inference.md) | Why there is no cloud provider |
-| [`docs/agents/`](docs/agents/) | Issue tracker, triage labels, domain-doc conventions |
-| [`AGENTS.md`](AGENTS.md) | Commands and conventions for coding agents |
+| Doc                                                                              | What's inside                                         |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                                   | Component diagram, request flows, storage layout      |
+| [`GLOSSARY.md`](GLOSSARY.md)                                                     | Section / article / clause / source / ref / highlight |
+| [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)                                       | Common local-inference and Docker problems            |
+| [`docs/adr/0001-local-only-inference.md`](docs/adr/0001-local-only-inference.md) | Why there is no cloud provider                        |
+| [`docs/agents/`](docs/agents/)                                                   | Issue tracker, triage labels, domain-doc conventions  |
+| [`AGENTS.md`](AGENTS.md)                                                         | Commands and conventions for coding agents            |
 
 ## 📄 License
 

@@ -15,6 +15,7 @@ collection: "f1-regs"
 
 top_k: 5
 similarity_threshold: 0.6
+refusal_threshold: 0.7
 pdf_directory: "PDFs"
 
 # Evaluation. The judge runs after generation, so the machine only ever holds

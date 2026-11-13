@@ -68,6 +68,7 @@ Metadata stored per chunk: `section`, `section_name`, `issue`, `date`, `doc_titl
 | `LOCAL_API_KEY` | `lm-studio` | Key sent to the local server |
 | `TOP_K` | `5` | Sources returned per query |
 | `SIMILARITY_THRESHOLD` | `0.6` | Min similarity to keep a source |
+| `REFUSAL_THRESHOLD` | `0.7` | Refuse (no sources) when best similarity is below this |
 | `PDF_DIRECTORY` | `PDFs` | PDF input dir |
 | `MAX_CHUNK_CHARS` | `800` | Max chars per chunk part |
 | `MAX_CHUNK_TOKENS` | `400` | Estimated token cap per embedded chunk |

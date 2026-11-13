@@ -56,6 +56,23 @@ async def query(request: QueryRequest):
         chunks = retrieve_chunks(request.question)
         chunks_retrieved = len(chunks)
         
+        # Refuse when nothing clears the refusal threshold, even if some chunks
+        # cleared the lower similarity threshold (keeps out-of-scope questions
+        # from being answered from weak matches). Direct clause lookups always
+        # have similarity 1.0 and are never refused here.
+        max_similarity = max((c.get("similarity", 0.0) for c in chunks), default=0.0)
+        if not chunks or max_similarity < config.refusal_threshold:
+            return QueryResponse(
+                answer="I couldn't find any relevant F1 regulations to answer your question. Please try rephrasing or ask about a different topic covered in the 2026 F1 regulations.",
+                sources=[],
+                metadata=QueryMetadata(
+                    model=config.llm_model,
+                    chunks_retrieved=chunks_retrieved,
+                    chunks_used=0,
+                    response_time_ms=int((time.time() - start_time) * 1000)
+                )
+            )
+
         # Filter by similarity threshold
         filtered_chunks = filter_by_threshold(chunks)
         
