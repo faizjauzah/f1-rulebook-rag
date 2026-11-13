@@ -210,14 +210,15 @@ Use LM Studio on a non-default port, or a different server entirely (Ollama, lla
 ## 📊 Evaluation
 
 ```bash
-./run.sh eval
+./run.sh eval all          # collect + score + report (swaps models automatically)
+./run.sh eval bless <runA> <runB>   # record the baseline noise band
 ```
 
-30 questions in [`eval/questions.json`](eval/questions.json) — 10 easy, 10 medium, 10 hard — covering all six regulation sections (A–F) plus two cross-section questions. Results are written to `eval/results.json` on the host (the `eval/` directory is bind-mounted into the API container).
+33 questions in [`eval/questions.json`](eval/questions.json): 30 verified positives (with human-written `reference` answers and `reference_clauses`) plus 3 out-of-scope negatives. The suite is RAGAS-based (`Faithfulness`, `LLMContextRecall`, `LLMContextPrecisionWithReference`, `AnswerCorrectness`) on top of deterministic checks (`clause_recall`, citations, latency, source counts). One RAGAS context = one retrieved Source (whole clause). Only `verified: true` positives enter the RAGAS aggregates; negatives are scored separately.
 
-Ingestion must have completed first, and the chat model must be loaded in LM Studio. Local generation is slow: expect roughly **1–2 minutes per question** on `google/gemma-4-e4b`, so a full run takes about **30–65 minutes**. The per-question deadline is `EVAL_TIMEOUT` (default `180` seconds); raise it if your model is slower.
+The judge (`qwen/qwen3.5-9b` by default) must differ from the generator; `./run.sh eval` swaps them via the `lms` CLI (16 GB RAM holds one chat model at a time). Results land in `eval/runs/<run-id>/` (`samples.jsonl`, `scores.json`, `scores.csv`, `summary.md`). `eval/runs/` is gitignored except the committed baseline.
 
-The suite records completion, latency, source counts and the raw answer — it does **not** score correctness automatically. Answers are reviewed by hand; the "no relevant regulations" behaviour is covered by the DRS question.
+Ingestion must have completed first. Local generation is slow: expect roughly **1–2 minutes per question** on `google/gemma-4-e4b` (~30 min for the suite); scoring takes ~1 minute per RAGAS job on `qwen/qwen3.5-9b`. The per-question deadline is `EVAL_TIMEOUT` (default `180` seconds); raise it if your model is slower. Run `./run.sh eval collect` / `score` / `report` separately to iterate without re-collecting.
 
 ### Smoke test
 
@@ -342,9 +343,9 @@ If no chunks are extracted it returns HTTP 200 with `"status": "error"` and `"ch
 │       ├── index.html          # Web UI
 │       └── vendor/             # marked + DOMPurify (no CDN)
 ├── eval/
-│   ├── questions.json          # 30 questions, easy/medium/hard
-│   ├── run_eval.py             # runner, writes results.json
-│   └── results.json            # latest run (gitignored)
+│   ├── questions.json          # 33 questions (30 verified + 3 negatives)
+│   ├── common.py / collect.py / score.py / report.py / run_eval.py
+│   └── runs/<run-id>/          # samples, scores, summary (gitignored)
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── adr/0001-local-only-inference.md
@@ -385,7 +386,7 @@ If no chunks are extracted it returns HTTP 200 with `"status": "error"` and `"ch
 - [ ] Hybrid search (keyword + semantic)
 - [ ] Query rewriting for better retrieval
 - [ ] Streaming responses
-- [ ] Automatic eval metrics (RAGAS, faithfulness)
+- [x] Automatic eval metrics (RAGAS: faithfulness, context recall/precision, answer correctness)
 - [ ] CI pipeline
 
 ## 📖 Documentation

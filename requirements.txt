@@ -11,7 +11,15 @@ chromadb==1.5.9
 pymupdf==1.24.10
 
 # Embeddings and LLM (local OpenAI-compatible server)
-openai==1.55.3
+# Stay on openai 2.x: 3.x makes HTTPX2 the default client, but local_client.py
+# passes an httpx.Timeout. Revisit together with app/services/local_client.py.
+openai>=2.45.0,<3.0.0
+
+# Evaluation (RAGAS scores through the same local server)
+ragas==0.4.3
+langchain-openai==1.7.4
 
 # Utils
 python-multipart==0.0.12
+pandas==3.1.1
+requests==2.34.2

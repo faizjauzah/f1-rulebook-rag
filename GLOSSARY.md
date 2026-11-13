@@ -56,3 +56,45 @@ _Avoid_: Provider, backend, engine
 
 **Cloud**:
 Any inference endpoint outside the machine or its private network. Not supported: the app refuses to start with one.
+
+### Evaluation
+
+**Reference answer**:
+The human-verified ideal answer to an evaluation question. Written as plain prose without citation markers; the clauses it relies on are recorded separately.
+_Avoid_: Gold answer, expected output, target
+
+**Reference clause**:
+A clause code a correct answer must rely on, written as it appears in the regulations, e.g. `C4.1`. Used to check retrieval without a judge.
+_Avoid_: Expected source, ground-truth chunk
+
+**Judge**:
+The chat model that scores an evaluation run. It is not the generator: it runs after generation, in a separate phase, and may be a stronger model.
+_Avoid_: Critic, scorer, evaluator model
+
+**Evaluation context**:
+The text of one source as handed to a metric. One context per source; never a paragraph or a chunk.
+_Avoid_: Document, passage
+
+**Evaluation run**:
+One collection of answers and one scoring pass under a fixed generator, judge and retrieval configuration.
+_Avoid_: Test, benchmark (for a single run)
+
+**Baseline**:
+The evaluation run that later runs are compared against, together with the noise measured on this machine.
+_Avoid_: Reference run, golden run
+
+**Faithfulness**:
+The share of claims in an answer that the retrieved sources support.
+_Avoid_: Accuracy, groundedness score
+
+**Context recall**:
+The share of the reference answer's claims that the retrieved sources cover.
+_Avoid_: Retrieval accuracy, hit rate
+
+**Context precision**:
+How highly the retrieved sources rank the ones that actually support the reference answer.
+_Avoid_: Relevance
+
+**Answer correctness**:
+Agreement between an answer and its reference answer, combining factual overlap and semantic similarity.
+_Avoid_: Score, grade

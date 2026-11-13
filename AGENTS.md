@@ -16,7 +16,7 @@
 
 **Testing**: Use `./smoke_test.sh` for quick validation, not manual curl chains.
 
-**Eval**: Must run inside container: `docker-compose exec api python eval/run_eval.py` (also available as `./run.sh eval`). `eval/` is copied into the image at build time, so rebuild after editing eval files.
+**Eval**: Run via `./run.sh eval` (stages: `all`, `collect`, `score`, `report`, `bless`). The `eval/` directory is bind-mounted into the container at `/app/eval`, so edits to eval code do **not** require a rebuild. The RAGAS suite is two-phase: `collect` (generator loaded) then `score` (judge loaded); `./run.sh eval all` swaps models automatically.
 
 ## Local-only, by design
 
@@ -118,11 +118,15 @@ Static UI served from `app/static/index.html` at root `/`. The UI consumes the s
 
 ## Eval
 
-10 questions in `eval/questions.json` with difficulty levels (easy/medium/hard). Results write to `eval/results.json`.
+33 questions in `eval/questions.json`: 30 verified positives (easy/medium/hard, with human-written `reference` answers and `reference_clauses`) plus 3 out-of-scope negative questions. Results write to `eval/runs/<run-id>/` (`samples.jsonl`, `scores.json`, `scores.csv`, `summary.md`). `eval/runs/` and `eval/drafts/` are gitignored; the committed baseline lives under `eval/runs/`.
+
+The suite is RAGAS-based (`ragas==0.4.3`): `Faithfulness`, `LLMContextRecall`, `LLMContextPrecisionWithReference`, `AnswerCorrectness`, plus deterministic checks (`clause_recall`, `citations_resolve`, `has_citation`, `cited_ratio`, `uncited_sources`, latency/source counts). One RAGAS context = one retrieved Source (whole clause), including uncited sources. Only `verified: true` positive questions enter RAGAS aggregates; negatives are scored separately. The judge (`config.yaml` → `evaluation.judge_model`, default `qwen/qwen3.5-9b`) must differ from the generator; `./run.sh eval` swaps them via the `lms` CLI (16 GB RAM holds one chat model at a time). `--keep-judge` skips restoring the generator.
+
+Stages: `collect` (generator loaded), `score` (judge loaded), `report`, `bless <run> [<compare>]`, `all`. Filtering: `EVAL_IDS`, `EVAL_CATEGORY`, `EVAL_LIMIT`. `./run.sh eval` forwards these plus `EVAL_TIMEOUT` and `EVAL_API_URL` into the container.
 
 Must query after ingestion completes, else "collection not found" error. The chat model must be loaded in the local server, or every question fails.
 
-Local generation is slow: ~60–130 s per question on `google/gemma-4-e4b` (~15 min for the suite). `eval/run_eval.py` waits `EVAL_TIMEOUT` seconds per question (default 180). If a client deadline expires while the server is still generating, the request keeps running and the next one queues behind it — timeouts cascade, so keep the deadline above real latency.
+Local generation is slow: ~60–130 s per question on `google/gemma-4-e4b` (~30 min for the suite). `eval/run_eval.py` waits `EVAL_TIMEOUT` seconds per question (default 180). If a client deadline expires while the server is still generating, the request keeps running and the next one queues behind it — timeouts cascade, so keep the deadline above real latency. Scoring runs ~1 RAGAS job per metric per question (~1 min each on `qwen/qwen3.5-9b` with reasoning disabled).
 
 ## Agent skills
 

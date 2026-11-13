@@ -32,7 +32,9 @@ data/
 *.db
 *.sqlite
 
-# Eval results
+# Eval results (raw runs are local; eval/baseline.json is tracked)
+eval/runs/
+eval/drafts/
 eval/results.json
 
 # IDE
@@ -47,4 +49,4 @@ eval/results.json
 *.log
 
 # Docker
-.dockerignore
+# .dockerignore is tracked: it keeps data/ and eval/runs/ out of the image.
